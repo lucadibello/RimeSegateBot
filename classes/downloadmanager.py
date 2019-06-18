@@ -1,0 +1,28 @@
+from classes.downloadrequest import DownloadRequest
+import urllib.request
+import os
+
+class DownloadManager:
+    
+    def __init__(self, download_req: DownloadRequest):
+        self.download_req = download_req
+
+    def download_file(self, save_path):
+        try:
+            ''' Create the urllib object for downloading files on the internet '''
+            full_path = os.path.join(save_path,self.download_req.filename + self._get_file_extension(self.download_req.url))
+            
+            ''' Connects to the site and download the media '''
+            urllib.request.urlretrieve(self.download_req.url, full_path)
+
+            print("File named {} saved correctly".format(full_path))
+
+            return True
+
+        except FileNotFoundError as f:
+            ''' If the directory 'downloads' doesn't exists '''
+            return "Error while saving file in {}".format(save_path)
+
+    @staticmethod
+    def _get_file_extension(url: str) -> str:
+        return url[url.rfind("."):]

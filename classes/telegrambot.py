@@ -3,9 +3,11 @@ This telegram bot is able to download media (images and videos) from an url.
 '''
 
 import logging
-
+import urllib.request
+import os
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
 from config.params import Params
+from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
 from pprint import pprint
 
@@ -45,16 +47,10 @@ class TelegramBot():
         conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('download',self.download)],
             states={
-                ''' Ask for the media url '''
                 self.SET_DOWNLOAD_URL: [MessageHandler(Filters.text, self.check_download_url, pass_user_data=True)],
-
-                ''' Ask for the media filename '''
                 self.SET_FILE_NAME: [MessageHandler(Filters.text, self.check_filename, pass_user_data=True)],
-
-                ''' Ask for the download confirmation '''
                 self.START_DOWNLOAD: [MessageHandler(Filters.text, self.download_confirmation, pass_user_data=False)]
             },
-            ''' Set the exit command for aborting the wizard '''
             fallbacks=[MessageHandler(Filters.regex('exit'),self.cancel_download_wizard)]
         )
 
@@ -100,6 +96,7 @@ class TelegramBot():
         if len(url) > 10:
 
             '''Check with regex if it's a link '''
+            # TODO: URL CHECK
             update.message.reply_text("Ohh, look at that meme")
 
             ''' Save url '''
@@ -118,6 +115,7 @@ class TelegramBot():
         filename = update.message.text
 
         if len(filename) > 4 and len(filename) < 255:
+            # TODO: CHECK FOR VALID FILENAME
             '''Check with regex if it's a valid filename '''
             update.message.reply_text("Shitty name but is okay..")
 
@@ -136,10 +134,18 @@ class TelegramBot():
         msg = update.message.text
         
         if msg == "y" or msg == "yes":
-            update.message.reply_text("Starting downloading..")
+            update.message.reply_text("Starting downloading resource...")
             
             ''' Download file '''
-            self._download_file(self.DOWNLOAD_REQUEST)
+            response = self._download_file(self.DOWNLOAD_REQUEST)
+
+            if response == True:
+                ''' File downloaded successfully '''
+                update.message.reply_text("File downloaded successfully.")
+            else:
+                ''' Error while saving the file '''
+                update.message.reply_text("Error while downloading the file...")
+
 
             ''' End conversation '''
             return ConversationHandler.END
@@ -157,9 +163,9 @@ class TelegramBot():
             update.message.reply_text("Only y/yes or n/no allowed..")
             return self.START_DOWNLOAD
 
-    @staticmethod
-    def _download_file(request: DownloadRequest):
-        print("WORK IN PROGRESS!!")
+    def _download_file(self, request: DownloadRequest):
+        manager = DownloadManager(request) 
+        return manager.download_file("download")
 
     def cancel_download_wizard(update, context):
         ''' Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute '''
