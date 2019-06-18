@@ -148,6 +148,8 @@ class TelegramBot:
             ''' Download file '''
             response = self._download_file(self.DOWNLOAD_REQUEST)
 
+            # TODO: Send the video to the user
+            
             if response == True:
                 ''' File downloaded successfully '''
                 update.message.reply_text("File downloaded successfully.")

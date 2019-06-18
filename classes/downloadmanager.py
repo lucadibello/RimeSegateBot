@@ -33,7 +33,7 @@ class DownloadManager:
             urllib.request.urlretrieve(self.download_req.url, full_path)
 
             print("File named {} saved correctly".format(full_path))
-
+            
             return True
 
         except FileNotFoundError as f:
