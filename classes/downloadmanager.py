@@ -2,11 +2,21 @@ from classes.downloadrequest import DownloadRequest
 import urllib.request
 import os
 
+'''
+This class is used for downloding content from the internet using the python native library 'urllib'.
+'''
 class DownloadManager:
     
+    '''
+        Constructor method. It saves into an attribute the requested resource.
+    '''
     def __init__(self, download_req: DownloadRequest):
         self.download_req = download_req
 
+    '''
+        This function is used for downloading the requested file 
+        from the internet and save it into a specific folder.
+    '''
     def download_file(self, save_path):
         try:
             ''' Create the urllib object for downloading files on the internet '''
