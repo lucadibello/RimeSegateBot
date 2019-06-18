@@ -1,5 +1,6 @@
 from classes.downloadrequest import DownloadRequest
 import urllib.request
+import datetime
 import os
 
 '''
@@ -21,13 +22,14 @@ class DownloadManager:
         try:
             if not automaticFilename:
                 ''' Create the urllib object for downloading files on the internet '''
-                full_path = os.path.join(save_path,self.download_req.filename + self._get_file_extension(self.download_req.url))
+                full_path = os.path.join(save_path, self.download_req.filename + self._get_file_extension(self.download_req.url))
             else:
-                ''' It will save the file with the same name of the downloaded one '''
-                full_path = os.path.join(save_path,os.path.basename(self.download_req.url))
+                ''' It will save the file with a unique filename based on the computer time (date and hour) '''
+                current_time = datetime.datetime.now()
+                full_path = os.path.join(save_path, current_time.strftime("%m%d%Y-%H%M%S") + self._get_file_extension(self.download_req.url))
 
             if overwriteCheck:
-                print("WIP")
+                print("TODO: Finish the owerwrite check")
 
             ''' Connects to the site and download the media '''
             urllib.request.urlretrieve(self.download_req.url, full_path)
