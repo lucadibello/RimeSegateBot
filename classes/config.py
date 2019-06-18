@@ -34,6 +34,7 @@ class Config:
         default_config = {
             "automaticName": True,
             "saveFolder": "download",
+            "overwriteCheck": True,
             "token": "INSERT YOUR TOKEN HERE"
         }
 

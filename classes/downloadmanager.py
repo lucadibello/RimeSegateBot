@@ -17,11 +17,18 @@ class DownloadManager:
         This function is used for downloading the requested file 
         from the internet and save it into a specific folder.
     '''
-    def download_file(self, save_path):
+    def download_file(self, save_path, overwriteCheck = False, automaticFilename = False):
         try:
-            ''' Create the urllib object for downloading files on the internet '''
-            full_path = os.path.join(save_path,self.download_req.filename + self._get_file_extension(self.download_req.url))
-            
+            if not automaticFilename:
+                ''' Create the urllib object for downloading files on the internet '''
+                full_path = os.path.join(save_path,self.download_req.filename + self._get_file_extension(self.download_req.url))
+            else:
+                ''' It will save the file with the same name of the downloaded one '''
+                full_path = os.path.join(save_path,os.path.basename(self.download_req.url))
+
+            if overwriteCheck:
+                print("WIP")
+
             ''' Connects to the site and download the media '''
             urllib.request.urlretrieve(self.download_req.url, full_path)
 

@@ -3,26 +3,29 @@ This telegram bot is able to download media (images and videos) from an url.
 '''
 
 import logging
-import urllib.request
-import os
+
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
-from config.params import Params
+from classes.config import Config
 from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
 from pprint import pprint
 
-class TelegramBot():
+class TelegramBot:
 
     ''' ConversationHandler steps '''
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
 
-    def __init__(self):
-        ''' Get bot token '''
-        self.TOKEN = Params.TOKEN
+    ''' Conversation texts '''
+    DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
+
+    def __init__(self, config: dict):
 
         ''' Create an empty DownloadRequest object for the download ConversationHandler '''  
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
-
+        
+        ''' Saves the passed config into an attribute'''
+        self.CONFIG = config
+        
         ''' Enable logging '''
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -31,7 +34,7 @@ class TelegramBot():
 
     def start_bot(self):
         ''' Create the bot object '''
-        updater = Updater(self.TOKEN, use_context=True)
+        updater = Updater(self.CONFIG["token"], use_context=True)
 
         ''' Get the dispatcher to register handlers '''
         dp = updater.dispatcher
@@ -102,9 +105,15 @@ class TelegramBot():
             ''' Save url '''
             self.DOWNLOAD_REQUEST.url = url
 
-            ''' Pass to another step '''
-            update.message.reply_text("Second step: send me a filename")
-            return self.SET_FILE_NAME
+            ''' Check if automaticFilename is enabled or not in the config '''
+            if not self.CONFIG["automaticFilename"]:
+                ''' Ask for the filename '''
+                update.message.reply_text("Second step: send me a filename")
+                return self.SET_FILE_NAME
+            else:
+                ''' Go to the download confirmation '''
+                update.message.reply_text(self.DOWNLOAD_CONFIRMATION)
+                return self.START_DOWNLOAD
         else:
             ''' Ask again '''
             update.message.reply_text("Nope, you have to send me a right url! Try again .-.")
@@ -123,7 +132,7 @@ class TelegramBot():
             self.DOWNLOAD_REQUEST.filename = filename
 
             ''' Pass to another step '''
-            update.message.reply_text("You want to start downloading this file? (y/n)")
+            update.message.reply_text(self.DOWNLOAD_CONFIRMATION)
             return self.START_DOWNLOAD
         else:
             ''' Ask again '''
@@ -146,13 +155,14 @@ class TelegramBot():
                 ''' Error while saving the file '''
                 update.message.reply_text("Error while downloading the file...")
 
-
             ''' End conversation '''
             return ConversationHandler.END
         
         elif msg == "n" or msg == "no":
             ''' Abord download wizard '''
             update.message.reply_text("Download wizard aborted..")
+            
+            ''' Reset download request '''
             self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
             
             ''' End conversation '''
@@ -165,7 +175,11 @@ class TelegramBot():
 
     def _download_file(self, request: DownloadRequest):
         manager = DownloadManager(request) 
-        return manager.download_file("download")
+        return manager.download_file(
+            self.CONFIG["saveFolder"],
+            overwriteCheck = self.CONFIG["overwriteCheck"],
+            automaticFilename=self.CONFIG["automaticFilename"]
+        )
 
     def cancel_download_wizard(update, context):
         ''' Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute '''
