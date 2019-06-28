@@ -1,0 +1,6 @@
+.vscode
+.idea
+config/config.json
+classes/__pycache__
+config/__pycache__
+download/
