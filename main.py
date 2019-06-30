@@ -44,7 +44,7 @@ def print_splashscreen():
 
 def print_settings(settings: dict):
     for key, value in settings.items():
-        print("->",key,":", value)
+        print("->", key, ":", value)
 
 '''
 This function tries to look for the config file by itself. If it doesn't find the 
@@ -56,7 +56,7 @@ file asks the user what to do:
 This method returns the config file path.
 '''
 
-#TODO: Finish _asker feature
+
 def config_loader() -> str:
     possible_path = "config/config.json"
 

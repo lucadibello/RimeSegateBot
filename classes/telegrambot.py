@@ -1,52 +1,52 @@
+
+
+import logging
+from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
+from classes.downloadmanager import DownloadManager
+from classes.downloadrequest import DownloadRequest
+
 '''
 This telegram bot is able to download media (images and videos) from an url.
 '''
 
-import logging
-
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
-from classes.config import Config
-from classes.downloadmanager import DownloadManager
-from classes.downloadrequest import DownloadRequest
-from pprint import pprint
 
 class TelegramBot:
 
-    ''' ConversationHandler steps '''
+    # ConversationHandler steps
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
 
-    ''' Conversation texts '''
+    # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
 
     def __init__(self, config: dict):
 
-        ''' Create an empty DownloadRequest object for the download ConversationHandler '''  
+        # Create an empty DownloadRequest object for the download ConversationHandler
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
-        
-        ''' Saves the passed config into an attribute'''
+
+        # Saves the passed config into an attribute
         self.CONFIG = config
-        
-        ''' Enable logging '''
+
+        # Enable logging
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-        ''' Get logger object '''
+        # Get logger object
         self.logger = logging.getLogger(__name__)
 
     def start_bot(self):
-        ''' Create the bot object '''
+        # Create the bot object
         updater = Updater(self.CONFIG["token"], use_context=True)
 
-        ''' Get the dispatcher to register handlers '''
+        # Get the dispatcher to register handlers
         dp = updater.dispatcher
 
-        ''' Register commands '''
+        # Register commands
         dp.add_handler(CommandHandler("start", self.start))
         dp.add_handler(CommandHandler("help", self.help))
 
-        ''' Add error handler '''
+        # Add error handler
         dp.add_error_handler(self.error)
 
-        ''' Conversation handler for the download request '''
+        # Conversation handler for the download request
         conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('download', self.download)],
             states={
@@ -57,159 +57,167 @@ class TelegramBot:
             fallbacks=[MessageHandler(Filters.regex('exit'), self.cancel_download_wizard)]
         )
 
-        ''' Register the conversation handler '''
+        # Register the conversation handler
         dp.add_handler(conversation_handler)
 
-        ''' Start the bot '''
+        # Start the bot
         updater.start_polling()
-        
+
         print("[*] Bot started")
 
         # Run the bot until you press Ctrl-C or the process receives SIGINT,
         # SIGTERM or SIGABRT. This should be used most of the time, since
         # start_polling() is non-blocking and will stop the bot gracefully.
         updater.idle()
-    
+
     '''
         COMMAND HANDLERS
     '''
 
     def start(self, update, context):
-        """ Send a message when the command /start is issued """
-        print("[Bot] Recived start command from", self._get_user_id(update))
+        # Send a message when the command /start is issued
+        print("[Bot] Received start command from", self._get_user_id(update))
         update.message.reply_text("Hello my boi. Welcome.")
 
-    def help(self, update, context):
-        """ Send to the user all the listed commands with their descriptions """
+    @staticmethod
+    def help(update, context):
+        # Send to the user all the listed commands with their descriptions
         update.message.reply_text("Just type /download.")
 
-    def download(self,update, context):
-        print("[Bot] Recived download command from", self._get_user_id(update))
+    def download(self, update, context):
+        print("[Bot] Received download command from", self._get_user_id(update))
 
-        if(self.CONFIG["noDownloadWizard"]):
+        if self.CONFIG["noDownloadWizard"]:
+
             # For fast downloading change automatic filename to true
             self.CONFIG["automaticFilename"] = True
         else:
-            ''' Start the download wizard '''
-            update.message.reply_text("Oh hello! I'm here to guide you inside the downloading wizard!. PS: you can exit this wizard any time you want, you have just to type 'exit'")
 
-        ''' Go to the first step '''
+            # Start the download wizard
+            update.message.reply_text("Oh hello! I'm here to guide you inside the downloading wizard!. "
+                                      "PS: you can exit this wizard any time you want, you have just to type 'exit'")
+
+        # Go to the first step
         update.message.reply_text("Send me an URL!")
         return self.SET_DOWNLOAD_URL
 
     def check_download_url(self, update, context):
-        ''' Get last message sent by the user '''
+        # Get last message sent by the user
         url = update.message.text
 
-        ''' Check url '''
+        # Check url
         if len(url) > 10:
-            
-            ''' Save url '''
+
+            # Save url
             self.DOWNLOAD_REQUEST.url = url
 
-            if(self.CONFIG["noDownloadWizard"]):
+            if self.CONFIG["noDownloadWizard"]:
                 print("[NoWizard] Skip to downloading")
-                ''' Download file '''
+                # Download file
                 response = self._download_file(self.DOWNLOAD_REQUEST)
 
                 # TODO: Send the video to the user
-                
-                if response == True:
-                    ''' File downloaded successfully '''
+
+                if response:
+                    # File downloaded successfully
                     update.message.reply_text("File downloaded successfully.")
                 else:
-                    ''' Error while saving the file '''
+                    # Error while saving the file
                     update.message.reply_text(response)
             else:
-                '''Check with regex if it's a link '''
+                # Check with regex if it's a link
                 # TODO: URL CHECK
                 update.message.reply_text("Ohh, look at that meme")
 
-                ''' Check if automaticFilename is enabled or not in the config '''
+                # Check if automaticFilename is enabled or not in the config
                 if not self.CONFIG["automaticFilename"]:
-                    ''' Ask for the filename '''
+
+                    # Ask for the filename
                     update.message.reply_text("Second step: send me a filename")
                     return self.SET_FILE_NAME
                 else:
-                    ''' Go to the download confirmation '''
+
+                    # Go to the download confirmation
                     update.message.reply_text(self.DOWNLOAD_CONFIRMATION)
                     return self.START_DOWNLOAD
         else:
-            ''' Ask again '''
+            # Ask again
             update.message.reply_text("Nope, you have to send me a right url! Try again .-.")
             return self.SET_DOWNLOAD_URL
-    
+
     def check_filename(self, update, context):
-        ''' Get last message sent by the user '''
+        # Get last message sent by the user
         filename = update.message.text
 
-        if len(filename) > 4 and len(filename) < 255:
+        if 4 < len(filename) < 255:
             # TODO: CHECK FOR VALID FILENAME
-            '''Check with regex if it's a valid filename '''
+            # Check with regex if it's a valid filename
             update.message.reply_text("Shitty name but is okay..")
 
-            ''' Save filename '''
+            # Save filename
             self.DOWNLOAD_REQUEST.filename = filename
 
-            ''' Pass to another step '''
+            # Pass to another step
             update.message.reply_text(self.DOWNLOAD_CONFIRMATION)
             return self.START_DOWNLOAD
         else:
-            ''' Ask again '''
+            # Ask again
             return self.SET_FILE_NAME
 
     def download_confirmation(self, update, context):
-        ''' Get last message sent by the user '''
+        # Get last message sent by the user
         msg = update.message.text
-        
+
         if msg == "y" or msg == "yes":
             update.message.reply_text("Starting downloading resource...")
-            
-            ''' Download file '''
+
+            # Download file
             response = self._download_file(self.DOWNLOAD_REQUEST)
 
             # TODO: Send the video to the user
-            
-            if response == True:
-                ''' File downloaded successfully '''
+
+            if response:
+                # File downloaded successfully
                 update.message.reply_text("File downloaded successfully.")
             else:
-                ''' Error while saving the file '''
+                # Error while saving the file
                 update.message.reply_text(response)
 
-            ''' End conversation '''
+            # End conversation
             return ConversationHandler.END
-        
+
         elif msg == "n" or msg == "no":
-            ''' Abord download wizard '''
+            # Abord download wizard
             update.message.reply_text("Download wizard aborted..")
-            
-            ''' Reset download request '''
+
+            # Reset download request
             self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
-            
-            ''' End conversation '''
+
+            # End conversation
             return ConversationHandler.END
 
         else:
-            ''' Ask again for confirmation '''
+            # Ask again for confirmation
             update.message.reply_text("Only y/yes or n/no allowed..")
             return self.START_DOWNLOAD
 
     def _download_file(self, request: DownloadRequest):
-        manager = DownloadManager(request) 
+        manager = DownloadManager(request)
         return manager.download_file(
             self.CONFIG["saveFolder"],
-            overwriteCheck = self.CONFIG["overwriteCheck"],
-            automaticFilename=self.CONFIG["automaticFilename"]
+            overwrite_check=self.CONFIG["overwriteCheck"],
+            automatic_filename=self.CONFIG["automaticFilename"]
         )
-    def cancel_download_wizard(update, context):
-        ''' Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute '''
-        update.message.reply_text("Exited downloding wizard!")
+
+    def cancel_download_wizard(self, update, context):
+        # Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute
+        update.message.reply_text("Exited downloading wizard!")
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
 
     def error(self, update, context):
-        ''' Log Errors caused by Updates '''
+        # Log Errors caused by Updates
         self.logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-    def _get_user_id(self, update):
+    @staticmethod
+    def _get_user_id(update):
         return update.message.chat_id
