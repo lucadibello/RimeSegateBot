@@ -4,6 +4,7 @@ import logging
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
 from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
+from classes.notifier import Notifier
 
 '''
 This telegram bot is able to download media (images and videos) from an url.
@@ -124,6 +125,9 @@ class TelegramBot:
                 else:
                     # Error while saving the file
                     update.message.reply_text(response)
+
+                # End conversation
+                return ConversationHandler.END
             else:
                 # Check with regex if it's a link
                 # TODO: URL CHECK
@@ -142,7 +146,7 @@ class TelegramBot:
                     return self.START_DOWNLOAD
         else:
             # Ask again
-            update.message.reply_text("Nope, you have to send me a right url! Try again .-.")
+            update.message.reply_text("Nope, you have to send me a right url, try again")
             return self.SET_DOWNLOAD_URL
 
     def check_filename(self, update, context):
@@ -179,6 +183,9 @@ class TelegramBot:
             if response:
                 # File downloaded successfully
                 update.message.reply_text("File downloaded successfully.")
+
+                update.send_photo(chat_id=self._get_user_id(update), photo=open('tests/test.png', 'rb'))
+
             else:
                 # Error while saving the file
                 update.message.reply_text(response)
@@ -202,12 +209,13 @@ class TelegramBot:
             return self.START_DOWNLOAD
 
     def _download_file(self, request: DownloadRequest, session):
-        manager = DownloadManager(request, self, session)
+        manager = DownloadManager(request, notifier=Notifier(session))
 
         return manager.download_file(
             self.CONFIG["saveFolder"],
             overwrite_check=self.CONFIG["overwriteCheck"],
-            automatic_filename=self.CONFIG["automaticFilename"]
+            automatic_filename=self.CONFIG["automaticFilename"],
+            new_download_method=self.CONFIG["newDownloadMethod"]
         )
 
     def cancel_download_wizard(self, update, context):
@@ -218,10 +226,6 @@ class TelegramBot:
     def error(self, update, context):
         # Log Errors caused by Updates
         self.logger.warning('Update "%s" caused error "%s"', update, context.error)
-
-    @staticmethod
-    def notifyUser(message, update):
-        update.message.reply_text(message)
 
     @staticmethod
     def _get_user_id(update):

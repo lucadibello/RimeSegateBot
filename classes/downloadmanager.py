@@ -1,4 +1,5 @@
 from classes.downloadrequest import DownloadRequest
+from classes.notifier import Notifier
 import urllib.request
 import urllib.parse
 import datetime
@@ -14,10 +15,9 @@ This class is used for downloading content from the internet using the python na
 class DownloadManager:
 
     # Constructor method. It saves into an attribute the requested resource.
-    def __init__(self, download_req: DownloadRequest, notifier=None, session=None):
+    def __init__(self, download_req: DownloadRequest, notifier: Notifier):
         self.download_req = download_req
         self.notifier = notifier
-        self.session = session
 
         ''' Create progress bar '''
         self.bar = None
@@ -27,7 +27,10 @@ class DownloadManager:
     def download_file(self, save_path, overwrite_check=False, automatic_filename=False, new_download_method=True):
         try:
             full_path = ""
-            if new_download_method:
+            if not new_download_method:
+
+                self.notifier.notify("[Warning] You are using the old download method, this method does\
+                             support only few sites. You rather switch to the new one by changhing the config file!")
 
                 if not automatic_filename:
                     ''' Create the urllib object for downloading files on the internet '''
@@ -53,6 +56,7 @@ class DownloadManager:
                 # Connects to the site and download the media
                 urllib.request.urlretrieve(self.download_req.url, full_path, self.download_progress)
             else:
+                self.notifier.notify("[Info] Starting download")
                 self._download(save_path, self.download_req.url)
 
             print("[Downloader] File named {} saved correctly".format(full_path))
@@ -66,8 +70,9 @@ class DownloadManager:
     TOT_DOWNLOADED = 0
 
     def _download(self, save_path, url):
+        # 'format': 'bestvideo/bestaudio',
+
         ydl_opts = {
-            'format': 'bestaudio/best',
             'outtmpl': save_path + "/" + '%(title)s.%(ext)s',
             'progress_hooks': [self.download_hook],
         }
@@ -78,12 +83,18 @@ class DownloadManager:
         except youtube_dl.utils.DownloadError as err:
             print("Error detected: " + err.exc_info)
 
-    @staticmethod
-    def download_hook(d):
+    def download_hook(self, d):
         if d["status"] == 'finished':
             print("Finished downloading video. Now converting...")
+            self.notifier.notify("Converting video...")
+        elif d["status"] == 'downloading':
+            print("Downloading...")
+        elif d['status'] == 'error':
+            print("[Download Hook] Detected an error")
+        else:
+            print("[Download Hook] Unknown download status")
 
-    def download_progress(self, count, block_size, total_size):
+    def download_progress(self, block_size, total_size):
 
         if self.bar is None:
             self.bar = tqdm(total=total_size, unit="b", unit_scale=True, dynamic_ncols=True)
@@ -92,16 +103,16 @@ class DownloadManager:
         self.bar.update(block_size)
         self.bar.refresh()
 
-        if self.notifier is not None and self.session is not None:
+        # Notify user
 
-            # Get current total
-            self.TOT_DOWNLOADED += block_size
-            temp = self.TOT_DOWNLOADED / total_size
-            percentage = temp * 100
+        # Get current total
+        self.TOT_DOWNLOADED += block_size
+        temp = self.TOT_DOWNLOADED / total_size
+        percentage = temp * 100
 
-            if percentage % 10 == 0:
-                # Notify user every 10% step
-                self.notifier.notify(percentage, self.session)
+        if percentage % 10 == 0:
+            # Notify user every 10% step
+            self.notifier.notify("Current download percentage: " + percentage)
 
     @staticmethod
     def overwrite_check(path, file) -> bool:

@@ -5,4 +5,4 @@ class DownloadRequest:
         self.filename = filename
 
     def get_dict(self):
-        return {"url": self.url, "filename": self.filename }
+        return {"url": self.url, "filename": self.filename}
