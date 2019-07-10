@@ -184,8 +184,6 @@ class TelegramBot:
                 # File downloaded successfully
                 update.message.reply_text("File downloaded successfully.")
 
-                update.send_photo(chat_id=self._get_user_id(update), photo=open('tests/test.png', 'rb'))
-
             else:
                 # Error while saving the file
                 update.message.reply_text(response)
