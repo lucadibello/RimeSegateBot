@@ -114,7 +114,7 @@ class TelegramBot:
             if self.CONFIG["noDownloadWizard"]:
                 print("[NoWizard] Skip to downloading")
                 # Download file
-                response = self._download_file(self.DOWNLOAD_REQUEST)
+                response = self._download_file(self.DOWNLOAD_REQUEST, update)
 
                 # TODO: Send the video to the user
 
@@ -172,7 +172,7 @@ class TelegramBot:
             update.message.reply_text("Starting downloading resource...")
 
             # Download file
-            response = self._download_file(self.DOWNLOAD_REQUEST)
+            response = self._download_file(self.DOWNLOAD_REQUEST, update)
 
             # TODO: Send the video to the user
 
@@ -201,8 +201,9 @@ class TelegramBot:
             update.message.reply_text("Only y/yes or n/no allowed..")
             return self.START_DOWNLOAD
 
-    def _download_file(self, request: DownloadRequest):
-        manager = DownloadManager(request)
+    def _download_file(self, request: DownloadRequest, session):
+        manager = DownloadManager(request, self, session)
+
         return manager.download_file(
             self.CONFIG["saveFolder"],
             overwrite_check=self.CONFIG["overwriteCheck"],
@@ -217,6 +218,10 @@ class TelegramBot:
     def error(self, update, context):
         # Log Errors caused by Updates
         self.logger.warning('Update "%s" caused error "%s"', update, context.error)
+
+    @staticmethod
+    def notifyUser(message, update):
+        update.message.reply_text(message)
 
     @staticmethod
     def _get_user_id(update):
