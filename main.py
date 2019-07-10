@@ -2,25 +2,24 @@ import os
 from classes.telegrambot import TelegramBot
 from classes.config import Config
 
-'''
-Main function.
-'''
+# Main function.
+
+
 def main():
     print_splashscreen()
 
-    '''
-    Find the config file path and creates a config manager.
-    '''
+    # Find the config file path and creates a config manager.
     config = config_loader()
     manager = Config(config)
     
-    ''' Load settings '''
+    # Load settings
     settings = manager.get_settings()
     print("[!] Settings loaded correctly:")
     print_settings(settings)
 
-    ''' Start the bot using the settings '''
+    # Start the bot using the settings
     start_bot(settings)
+
 
 def print_splashscreen():
     splash = \
@@ -41,6 +40,7 @@ def print_splashscreen():
     """
 
     print(splash)
+
 
 def print_settings(settings: dict):
     for key, value in settings.items():
@@ -67,19 +67,20 @@ def config_loader() -> str:
         question = " 1) Generate a new file \n 2) Insert the config file path"
         _asker(question)
 
-'''
-    This method is used for requesting an input from the user.
-'''
+# This method is used for requesting an input from the user.
+
+
 def _asker(question: str):
     print("TODO")
 
-'''
-    This function is used to start the bot.
-'''
+# This function is used to start the bot.
+
+
 def start_bot(config: dict):
-    ''' Start bot '''
+    # Start bot
     bot = TelegramBot(config)
     bot.start_bot()
+
 
 if __name__ == "__main__":
     main()
