@@ -89,11 +89,9 @@ class TelegramBot:
         print("[Bot] Received download command from", self._get_user_id(update))
 
         if self.CONFIG["noDownloadWizard"]:
-
             # For fast downloading change automatic filename to true
             self.CONFIG["automaticFilename"] = True
         else:
-
             # Start the download wizard
             update.message.reply_text("Oh hello! I'm here to guide you inside the downloading wizard!. "
                                       "PS: you can exit this wizard any time you want, you have just to type 'exit'")
@@ -115,16 +113,9 @@ class TelegramBot:
             if self.CONFIG["noDownloadWizard"]:
                 print("[NoWizard] Skip to downloading")
                 # Download file
-                response = self._download_file(self.DOWNLOAD_REQUEST, update)
+                self._download_file(self.DOWNLOAD_REQUEST, update)
 
                 # TODO: Send the video to the user
-
-                if response:
-                    # File downloaded successfully
-                    update.message.reply_text("File downloaded successfully.")
-                else:
-                    # Error while saving the file
-                    update.message.reply_text(response)
 
                 # End conversation
                 return ConversationHandler.END
@@ -176,23 +167,15 @@ class TelegramBot:
             update.message.reply_text("Starting downloading resource...")
 
             # Download file
-            response = self._download_file(self.DOWNLOAD_REQUEST, update)
+            self._download_file(self.DOWNLOAD_REQUEST, update)
 
             # TODO: Send the video to the user
-
-            if response:
-                # File downloaded successfully
-                update.message.reply_text("File downloaded successfully.")
-
-            else:
-                # Error while saving the file
-                update.message.reply_text(response)
 
             # End conversation
             return ConversationHandler.END
 
         elif msg == "n" or msg == "no":
-            # Abord download wizard
+            # Abort download wizard
             update.message.reply_text("Download wizard aborted..")
 
             # Reset download request
@@ -209,7 +192,7 @@ class TelegramBot:
     def _download_file(self, request: DownloadRequest, session):
         manager = DownloadManager(request, notifier=Notifier(session))
 
-        return manager.download_file(
+        manager.download_file(
             self.CONFIG["saveFolder"],
             overwrite_check=self.CONFIG["overwriteCheck"],
             automatic_filename=self.CONFIG["automaticFilename"],
