@@ -56,7 +56,7 @@ class DownloadManager:
                 # Connects to the site and download the media
                 urllib.request.urlretrieve(self.download_req.url, full_path, self.download_progress)
             else:
-                self.notifier.notify_information("[Info] Starting download")
+                self.notifier.notify_information("Starting download")
                 self.notifier.notify_information("\
                 You are using the new download system witch supports a lot of websites,\
                 <a href='https://ytdl-org.github.io/youtube-dl/supportedsites.html'>view the full list </a>.")
@@ -109,9 +109,11 @@ class DownloadManager:
         if d["status"] == 'finished':
             print("Finished downloading video. Now converting...")
             self.notifier.notify_information("Converting video...")
+            self._handle_download_finished(d['filename'])
 
         elif d["status"] == 'downloading':
-            print("Downloading...")
+            print(d['filename'], d['_percent_str'], d['_eta_str'])
+
         elif d['status'] == 'error':
             print("[Download Hook] Detected an error")
         else:
@@ -136,6 +138,9 @@ class DownloadManager:
         if percentage % 10 == 0:
             # Notify user every 10% step
             self.notifier.notify_information("Current download percentage: " + percentage)
+
+    def _handle_download_finished(self, file_path):
+        self.notifier.send_video(file_path)
 
     @staticmethod
     def overwrite_check(path, file) -> bool:

@@ -29,3 +29,6 @@ class Notifier:
 
     def notify_debug(self, message):
         self._notify("{} {}".format(self.DEBUG_EMOJI, message))
+
+    def send_video(self, video_path):
+        self.update.message.reply_video(open(video_path, 'rb'), timeout=5000)
