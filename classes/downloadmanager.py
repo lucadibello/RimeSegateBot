@@ -1,6 +1,5 @@
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
-import telegram
 import urllib.request
 import urllib.parse
 import datetime
@@ -62,7 +61,7 @@ class DownloadManager:
                 You are using the new download system witch supports a lot of websites,\
                 <a href='https://ytdl-org.github.io/youtube-dl/supportedsites.html'>view the full list </a>.")
 
-                self._download(save_path, self.download_req.url)
+                self._download(save_path, self.download_req.url, automatic_filename)
 
             print("[Downloader] File named {} saved correctly".format(full_path))
             self.notifier.notify_success("File downloaded and saved correctly.")
@@ -71,18 +70,34 @@ class DownloadManager:
 
         except Exception as f:
             # If the directory where is going to save the file doesn't exists
-            print("[Downloader] Error while downloading file:", f)
-            self.notifier.notify_error("Detected an error while downloading the resource:", f)
+            print("[Downloader] Error while downloading file:", str(f))
+            self.notifier.notify_error("Detected an error while downloading the resource: " + str(f))
 
     TOT_DOWNLOADED = 0
 
-    def _download(self, save_path, url):
+    def _download(self, save_path: str, url: str, automatic_filename: bool):
         # 'format': 'bestvideo/bestaudio',
 
-        ydl_opts = {
-            'outtmpl': save_path + "/" + '%(title)s.%(ext)s',
-            'progress_hooks': [self.download_hook],
-        }
+        if automatic_filename:
+            ''' It will save the file with a unique filename based on the computer time (date and hour) '''
+            filename = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
+
+            ydl_opts = {
+                'outtmpl': save_path + "/" + filename+".%(ext)s",
+                'progress_hooks': [self.download_hook],
+                'logger': DownloaderLogger(self.notifier),
+            }
+        else:
+            self.notifier.notify_warning("\
+            You don't have 'automaticFilename' activated. If the resource you're downloading has the same name of\
+             another already saved, it will overwrite the saved one. Use at your own risk!")
+
+            ydl_opts = {
+                'outtmpl': save_path + "/" + '%(title)s.%(ext)s',
+                'progress_hooks': [self.download_hook],
+                'logger': DownloaderLogger(self.notifier),
+            }
+
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
@@ -94,6 +109,7 @@ class DownloadManager:
         if d["status"] == 'finished':
             print("Finished downloading video. Now converting...")
             self.notifier.notify_information("Converting video...")
+
         elif d["status"] == 'downloading':
             print("Downloading...")
         elif d['status'] == 'error':
@@ -141,3 +157,18 @@ class DownloadManager:
     @staticmethod
     def _normalize_filename(filename: str) -> str:
         return ''.join(e for e in filename if e.isalnum())
+
+
+class DownloaderLogger(object):
+
+    def __init__(self, notifier: Notifier):
+        self.NOTIFIER = notifier
+
+    def debug(self, msg):
+        self.NOTIFIER.notify_debug(msg)
+
+    def warning(self, msg):
+        self.NOTIFIER.notify_warning(msg)
+
+    def error(self, msg):
+        self.NOTIFIER.notify_error(msg)

@@ -7,6 +7,7 @@ class Notifier:
     WARNING_EMOJI = "⚠️"
     INFO_EMOJI = "ℹ️"
     SUCCESS_EMOJI = "✅"
+    DEBUG_EMOJI = "🎌"
 
     def __init__(self, update):
         self.update = update
@@ -25,3 +26,6 @@ class Notifier:
 
     def notify_success(self, message):
         self._notify("{} {}".format(self.SUCCESS_EMOJI, message))
+
+    def notify_debug(self, message):
+        self._notify("{} {}".format(self.DEBUG_EMOJI, message))
