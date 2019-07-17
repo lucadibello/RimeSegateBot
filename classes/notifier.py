@@ -2,12 +2,17 @@ from telegram import ParseMode
 
 
 class Notifier:
-
     ERROR_EMOJI = "❌"
     WARNING_EMOJI = "⚠️"
     INFO_EMOJI = "ℹ️"
     SUCCESS_EMOJI = "✅"
     DEBUG_EMOJI = "🎌"
+
+    ''' OpenLoad Prefix Emoji'''
+    OPENLOAD_FILE_NAME = "📁"
+    OPENLOAD_FILE_SIZE = "🏋️"
+    OPENLOAD_FILE_TYPE = "🗃️"
+    OPENLOAD_URL = "🌎"
 
     def __init__(self, update, bot, send_video_timeout=80):
         self.update = update
@@ -42,3 +47,27 @@ class Notifier:
             open(video_path, 'rb'),
             timeout=self.VIDEO_TIMEOUT
         )
+
+    def notify_openload_response(self, response):
+        response_beautified = "{} Name: {}\n\r" \
+                              "{} Size: {} Bytes\n\r" \
+                              "{} Media type: {}\n\r" \
+                              "{} Url: {}\n\r".format(self.OPENLOAD_FILE_NAME, response["name"],
+                                                      self.OPENLOAD_FILE_SIZE, response["size"],
+                                                      self.OPENLOAD_FILE_TYPE, response["content_type"],
+                                                      self.OPENLOAD_URL, response["url"])
+
+        self._notify(response_beautified)
+
+    def send_photo_bytes(self, image_bytes, caption=""):
+        if not caption:
+            self.bot.send_photo(
+                self.update.message.chat_id,
+                image_bytes,
+            )
+        else:
+            self.bot.send_photo(
+                self.update.message.chat_id,
+                image_bytes,
+                caption=caption
+            )

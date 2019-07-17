@@ -4,7 +4,7 @@ import logging
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
 from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
-from classes.urlchecker import UrlChecker
+from classes.openloadwrapper import OpenloadWrapper
 from classes.urlchecker import UrlChecker
 from classes.notifier import Notifier
 
@@ -37,6 +37,9 @@ class TelegramBot:
 
         # Create bot object
         self.BOT = None
+
+        # Create openload object
+        self.OL = OpenloadWrapper(self.CONFIG["openload_api_login"], self.CONFIG["openload_api_key"], self.CONFIG["openloadThumbnailDelaySeconds"])
 
     def start_bot(self):
         # Create the bot object
@@ -89,6 +92,7 @@ class TelegramBot:
     def start(self, update, context):
         # Send a message when the command /start is issued
         print("[Bot] Received start command from", self._get_user_id(update))
+
         update.message.reply_text("Hello my boi. Welcome.")
 
     @staticmethod
@@ -105,6 +109,7 @@ class TelegramBot:
         if self.CONFIG["noDownloadWizard"]:
             # For fast downloading change automatic filename to true
             self.CONFIG["automaticFilename"] = True
+
         else:
             # Start the download wizard
             notifier.notify_information("Oh hello! I'm here to guide you inside the downloading wizard!.\
@@ -205,7 +210,11 @@ class TelegramBot:
             return self.START_DOWNLOAD
 
     def _download_file(self, request: DownloadRequest, session):
-        manager = DownloadManager(request, notifier=Notifier(session, self.BOT, self.CONFIG["videoTimeout"]))
+        manager = DownloadManager(
+            request,
+            notifier=Notifier(session, self.BOT, self.CONFIG["videoTimeout"]),
+            openload=self.OL
+        )
 
         manager.download_file(
             self.CONFIG["saveFolder"],

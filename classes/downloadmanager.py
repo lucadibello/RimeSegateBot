@@ -1,33 +1,38 @@
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
+from classes.openloadwrapper import OpenloadWrapper
+from openload.api_exceptions import *
+from tqdm import tqdm
+from io import BytesIO
+import requests
 import urllib.request
 import urllib.parse
 import datetime
 import youtube_dl
 import os
-from tqdm import tqdm
 
 '''
-This class is used for downloading content from the internet using the python native library 'urllib'.
+This class is used for downloading content from the internet using the python native library 'urllib' or "Youtube-DL"
 '''
 
 
 class DownloadManager:
-
     # Saves all the bytes downloaded bytes for the old download method hook
     TOT_DOWNLOADED = 0
 
     # Constructor method. It saves into an attribute the requested resource.
-    def __init__(self, download_req: DownloadRequest, notifier: Notifier):
+    def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper):
         self.download_req = download_req
         self.notifier = notifier
+        self.OL = openload
 
         ''' Create progress bar '''
         self.bar = None
 
     # This function is used for downloading the requested file
     # from the internet and save it into a specific folder.
-    def download_file(self, save_path, overwrite_check=False, automatic_filename=False, new_download_method=True, convert_to_mp4 = False):
+    def download_file(self, save_path, overwrite_check=False, automatic_filename=False, new_download_method=True,
+                      convert_to_mp4=False):
         try:
             full_path = ""
             if not new_download_method:
@@ -79,13 +84,14 @@ class DownloadManager:
 
             return True
 
-        except Exception as f:
+        except FileNotFoundException as f:
             # If the directory where is going to save the file doesn't exists
-            print("[Downloader] Error while downloading file:", str(f))
+            print("[Downloader] Error of type {} while downloading file:".format(type(f).__name__), str(f))
             self.notifier.notify_error("Detected an error while downloading the resource: " + str(f))
 
     # New download method which supports over 1000+ websites using Youtube-DL embedded library
-    def _download(self, save_path: str, download_request: DownloadRequest, automatic_filename: bool, convert_to_mp4=False):
+    def _download(self, save_path: str, download_request: DownloadRequest, automatic_filename: bool,
+                  convert_to_mp4=False):
 
         # Base downloader options
         ydl_opts = {
@@ -105,7 +111,7 @@ class DownloadManager:
             """
 
             # Add output format
-            ydl_opts.update({'outtmpl': save_path + "/" + filename+".%(ext)s"})
+            ydl_opts.update({'outtmpl': save_path + "/" + filename + ".%(ext)s"})
 
         else:
             self.notifier.notify_warning("\
@@ -113,9 +119,13 @@ class DownloadManager:
              another already saved, it will overwrite the saved one. Use at your own risk!")
 
             # Add output format
-            ydl_opts.update({'outtmpl': save_path + "/" + download_request.filename+".%(ext)s"})
+            ydl_opts.update({'outtmpl': save_path + "/" + download_request.filename + ".%(ext)s"})
 
         if convert_to_mp4:
+            self.notifier.notify_error(
+                "MP4 conversion has a bug. It will upload on OpenLoad and then will convert the video...\
+                Please check the Youtube-DL's Download Hook"
+            )
 
             ydl_opts.update({'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
@@ -169,8 +179,37 @@ class DownloadManager:
             # Notify user every 10% step
             self.notifier.notify_information("Current download percentage: " + percentage)
 
+    # This method handles all the post-download process
     def _handle_download_finished(self, file_path):
-        self.notifier.send_video(file_path)
+        # TODO: Upload video to OpenLoad
+        try:
+            self.notifier.notify_information(
+                "Uploading file to Openload, this will take some time (depends from filesize)")
+
+            # Upload file to Openload
+            response = self.OL.upload_file(file_path)
+            print("[OpenLoadWrapper] Video uploaded and returned a response")
+            print(response)
+            print("Video id: ", response.get("id"))
+            self.notifier.notify_openload_response(response)
+
+            self.notifier.notify_information("Wating OpenLoad to generate a thumbnail...")
+
+            # TODO: Send thumbail
+            thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"))
+            print("[DownloadManager] Got a thumbnail url:", thumb_url)
+            self.notifier.send_photo_bytes(
+                self.download_image_stream(thumb_url),
+                "Video thumbnail"
+            )
+
+        except PermissionDeniedException as pde:
+            self.notifier.notify_error("Permission denied detected while trying to upload data to openload:" + str(pde))
+
+    @staticmethod
+    def download_image_stream(url: str) -> BytesIO:
+        r = requests.get(url)
+        return BytesIO(r.content)
 
     @staticmethod
     def overwrite_check(path, file) -> bool:
