@@ -14,6 +14,9 @@ This class is used for downloading content from the internet using the python na
 
 class DownloadManager:
 
+    # Saves all the bytes downloaded bytes for the old download method hook
+    TOT_DOWNLOADED = 0
+
     # Constructor method. It saves into an attribute the requested resource.
     def __init__(self, download_req: DownloadRequest, notifier: Notifier):
         self.download_req = download_req
@@ -24,13 +27,19 @@ class DownloadManager:
 
     # This function is used for downloading the requested file
     # from the internet and save it into a specific folder.
-    def download_file(self, save_path, overwrite_check=False, automatic_filename=False, new_download_method=True):
+    def download_file(self, save_path, overwrite_check=False, automatic_filename=False, new_download_method=True, convert_to_mp4 = False):
         try:
             full_path = ""
             if not new_download_method:
 
-                self.notifier.notify_warning("You are using the old download method, this method does\
-                             support only few sites. You rather switch to the new one by changing the config file!")
+                self.notifier.notify_warning(
+                    "You are using the old download method, this method does\
+                    support only few sites and less options.\
+                    You rather switch to the new one by changing the config file!"
+                )
+
+                if convert_to_mp4:
+                    self.notifier.notify_warning("The file conversion is supported only using the new download method.")
 
                 if not automatic_filename:
                     ''' Create the urllib object for downloading files on the internet '''
@@ -48,6 +57,7 @@ class DownloadManager:
                 full_path = os.path.join(save_path, filename)
 
                 ''' Check for overwrite if it's enabled '''
+                # TODO: Move overwrite check before downloading
                 if overwrite_check:
                     print("[!] Starting overwrite check")
                     if not self.overwrite_check(save_path, filename):
@@ -55,13 +65,14 @@ class DownloadManager:
 
                 # Connects to the site and download the media
                 urllib.request.urlretrieve(self.download_req.url, full_path, self.download_progress)
+
             else:
                 self.notifier.notify_information("Starting download")
                 self.notifier.notify_information("\
                 You are using the new download system witch supports a lot of websites,\
                 <a href='https://ytdl-org.github.io/youtube-dl/supportedsites.html'>view the full list </a>.")
 
-                self._download(save_path, self.download_req.url, automatic_filename)
+                self._download(save_path, self.download_req, automatic_filename, convert_to_mp4=convert_to_mp4)
 
             print("[Downloader] File named {} saved correctly".format(full_path))
             self.notifier.notify_success("File downloaded and saved correctly.")
@@ -73,38 +84,56 @@ class DownloadManager:
             print("[Downloader] Error while downloading file:", str(f))
             self.notifier.notify_error("Detected an error while downloading the resource: " + str(f))
 
-    TOT_DOWNLOADED = 0
+    # New download method which supports over 1000+ websites using Youtube-DL embedded library
+    def _download(self, save_path: str, download_request: DownloadRequest, automatic_filename: bool, convert_to_mp4=False):
 
-    def _download(self, save_path: str, url: str, automatic_filename: bool):
-        # 'format': 'bestvideo/bestaudio',
+        # Base downloader options
+        ydl_opts = {
+            'progress_hooks': [self.download_hook],
+            'logger': DownloaderLogger(self.notifier),
+        }
 
         if automatic_filename:
             ''' It will save the file with a unique filename based on the computer time (date and hour) '''
             filename = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
 
-            ydl_opts = {
-                'outtmpl': save_path + "/" + filename+".%(ext)s",
-                'progress_hooks': [self.download_hook],
-                'logger': DownloaderLogger(self.notifier),
-            }
+            """
+                CONVERTER:
+                
+                    
+                'format': "mp4",
+            """
+
+            # Add output format
+            ydl_opts.update({'outtmpl': save_path + "/" + filename+".%(ext)s"})
+
         else:
             self.notifier.notify_warning("\
             You don't have 'automaticFilename' activated. If the resource you're downloading has the same name of\
              another already saved, it will overwrite the saved one. Use at your own risk!")
 
-            ydl_opts = {
-                'outtmpl': save_path + "/" + '%(title)s.%(ext)s',
-                'progress_hooks': [self.download_hook],
-                'logger': DownloaderLogger(self.notifier),
-            }
+            # Add output format
+            ydl_opts.update({'outtmpl': save_path + "/" + download_request.filename+".%(ext)s"})
+
+        if convert_to_mp4:
+
+            ydl_opts.update({'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',
+            }]})
+
+        # Start download
+        print("[Youtube-DL] generated config:")
+        print(ydl_opts)
 
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+                ydl.download([download_request.url])
 
         except youtube_dl.utils.DownloadError as err:
-            print("Error detected: " + err.exc_info)
+            print("[Youtube-DL] Error detected: " + err.exc_info)
 
+    # Download hook for the new download method (Youtube-DL)
     def download_hook(self, d):
         if d["status"] == 'finished':
             print("Finished downloading video. Now converting...")
@@ -119,6 +148,7 @@ class DownloadManager:
         else:
             print("[Download Hook] Unknown download status")
 
+    # Download hook for the old download method
     def download_progress(self, block_size, total_size):
 
         if self.bar is None:
@@ -164,6 +194,7 @@ class DownloadManager:
         return ''.join(e for e in filename if e.isalnum())
 
 
+# This logger is used by Youtube-DL for logging all the information related to the download process
 class DownloaderLogger(object):
 
     def __init__(self, notifier: Notifier):

@@ -9,8 +9,10 @@ class Notifier:
     SUCCESS_EMOJI = "✅"
     DEBUG_EMOJI = "🎌"
 
-    def __init__(self, update):
+    def __init__(self, update, bot, send_video_timeout=80):
         self.update = update
+        self.bot = bot
+        self.VIDEO_TIMEOUT = send_video_timeout
 
     def _notify(self, message):
         self.update.message.reply_text(message, parse_mode=ParseMode.HTML)
@@ -30,5 +32,13 @@ class Notifier:
     def notify_debug(self, message):
         self._notify("{} {}".format(self.DEBUG_EMOJI, message))
 
+    def notify_custom(self, prefix, message):
+        self._notify("{} {}".format(prefix, message))
+
     def send_video(self, video_path):
-        self.update.message.reply_video(open(video_path, 'rb'), timeout=5000)
+        self.notify_information("Uploading video to telegram...")
+        self.bot.send_video(
+            self.update.message.chat_id,
+            open(video_path, 'rb'),
+            timeout=self.VIDEO_TIMEOUT
+        )

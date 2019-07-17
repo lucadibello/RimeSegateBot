@@ -30,7 +30,9 @@ class Config:
     '''
         This function is used for generating a default config file.
     '''
-    def create_default_file():
+    def create_default_file(self):
+        # TODO: Finish
+
         default_config = {
             "automaticName": True,
             "saveFolder": "download",
@@ -46,6 +48,8 @@ class Config:
         will generate a new one using the 'create_default_file' function.
     '''
     def check_config_file(self):
+        # TODO: Finish
+
         data = self._read_json()
         print("Check if there are all the required settings")
 

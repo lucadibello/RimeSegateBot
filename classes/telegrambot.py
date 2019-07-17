@@ -4,6 +4,8 @@ import logging
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
 from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
+from classes.urlchecker import UrlChecker
+from classes.urlchecker import UrlChecker
 from classes.notifier import Notifier
 
 '''
@@ -33,9 +35,17 @@ class TelegramBot:
         # Get logger object
         self.logger = logging.getLogger(__name__)
 
+        # Create bot object
+        self.BOT = None
+
     def start_bot(self):
         # Create the bot object
-        updater = Updater(self.CONFIG["token"], use_context=True)
+        updater = Updater(self.CONFIG["token"], use_context=True, request_kwargs={
+            'read_timeout': self.CONFIG["readTimeout"],
+            'connect_timeout': self.CONFIG["connectTimeout"]
+        })
+
+        self.BOT = updater.bot
 
         # Get the dispatcher to register handlers
         dp = updater.dispatcher
@@ -71,6 +81,7 @@ class TelegramBot:
         # start_polling() is non-blocking and will stop the bot gracefully.
         updater.idle()
 
+
     '''
         COMMAND HANDLERS
     '''
@@ -88,24 +99,31 @@ class TelegramBot:
     def download(self, update, context):
         print("[Bot] Received download command from", self._get_user_id(update))
 
+        # Create unique notifier for this user (every update -> different notifier)
+        notifier = Notifier(update, self.BOT)
+
         if self.CONFIG["noDownloadWizard"]:
             # For fast downloading change automatic filename to true
             self.CONFIG["automaticFilename"] = True
         else:
             # Start the download wizard
-            update.message.reply_text("Oh hello! I'm here to guide you inside the downloading wizard!. "
-                                      "PS: you can exit this wizard any time you want, you have just to type 'exit'")
+            notifier.notify_information("Oh hello! I'm here to guide you inside the downloading wizard!.\
+                                      PS: you can exit this wizard any time you want, you have just to type 'exit'")
 
         # Go to the first step
-        update.message.reply_text("Send me an URL!")
+        notifier.notify_custom(":one:", "Send me a the media url")
+
         return self.SET_DOWNLOAD_URL
 
     def check_download_url(self, update, context):
+        # Create unique notifier for this user (every update -> different notifier)
+        notifier = Notifier(update, self.BOT)
+
         # Get last message sent by the user
         url = update.message.text
 
         # Check url
-        if len(url) > 10:
+        if UrlChecker.full_check(url):
 
             # Save url
             self.DOWNLOAD_REQUEST.url = url
@@ -115,20 +133,17 @@ class TelegramBot:
                 # Download file
                 self._download_file(self.DOWNLOAD_REQUEST, update)
 
-                # TODO: Send the video to the user
-
                 # End conversation
                 return ConversationHandler.END
             else:
-                # Check with regex if it's a link
-                # TODO: URL CHECK
-                update.message.reply_text("Ohh, look at that meme")
+                notifier.notify_success("The url is well-formatted and the website is reachable.")
 
                 # Check if automaticFilename is enabled or not in the config
                 if not self.CONFIG["automaticFilename"]:
 
                     # Ask for the filename
-                    update.message.reply_text("Second step: send me a filename")
+                    notifier.notify_custom("2️⃣", "Send me a filename")
+
                     return self.SET_FILE_NAME
                 else:
 
@@ -137,7 +152,7 @@ class TelegramBot:
                     return self.START_DOWNLOAD
         else:
             # Ask again
-            update.message.reply_text("Nope, you have to send me a right url, try again")
+            notifier.notify_error("The url is not valid or the website is not reachable.")
             return self.SET_DOWNLOAD_URL
 
     def check_filename(self, update, context):
@@ -190,13 +205,14 @@ class TelegramBot:
             return self.START_DOWNLOAD
 
     def _download_file(self, request: DownloadRequest, session):
-        manager = DownloadManager(request, notifier=Notifier(session))
+        manager = DownloadManager(request, notifier=Notifier(session, self.BOT, self.CONFIG["videoTimeout"]))
 
         manager.download_file(
             self.CONFIG["saveFolder"],
             overwrite_check=self.CONFIG["overwriteCheck"],
             automatic_filename=self.CONFIG["automaticFilename"],
-            new_download_method=self.CONFIG["newDownloadMethod"]
+            new_download_method=self.CONFIG["newDownloadMethod"],
+            convert_to_mp4=self.CONFIG["videoToMP4"]
         )
 
     def cancel_download_wizard(self, update, context):
