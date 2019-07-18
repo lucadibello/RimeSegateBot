@@ -1,6 +1,7 @@
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
+from telegram import ChatAction
 from openload.api_exceptions import *
 from tqdm import tqdm
 from io import BytesIO
@@ -211,10 +212,14 @@ class DownloadManager:
                 self.notifier.notify_warning("Can't estimate a thumbnail generation time...")
             else:
                 self.notifier.notify_warning(
-                    "Estimated time for thumbnail generation: " + str(get_thumbnail_stimed_generation_size(filesize)))
+                    "Estimated time for thumbnail generation: " + str(
+                        get_thumbnail_stimed_generation_size(filesize))) + " seconds"
 
             thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"))
             print("[DownloadManager] Got a thumbnail url:", thumb_url)
+
+            self.notifier.bot_send_action(ChatAction.TYPING)
+
             self.notifier.send_photo_bytes(
                 self.download_image_stream(thumb_url),
                 "Video thumbnail"

@@ -14,6 +14,32 @@ from classes.urlchecker import UrlChecker
 from classes.notifier import Notifier
 from functools import wraps
 
+LIST_OF_ADMINS = [""]
+
+
+def send_action(action):
+    """Sends `action` while processing func command."""
+    def decorator(func):
+        @wraps(func)
+        def command_func(update, context, *args, **kwargs):
+            context.bot.send_chat_action(chat_id=update.effective_message.chat_id, action=action)
+            return func(update, context, *args, **kwargs)
+
+        return command_func
+    return decorator
+
+
+def restricted(func):
+    @wraps(func)
+    def wrapped(update, context, *args, **kwargs):
+        user_id = update.effective_user.id
+        if user_id not in LIST_OF_ADMINS:
+            print("Unauthorized access denied for {}.".format(user_id))
+            return
+        return func(update, context, *args, **kwargs)
+    return wrapped
+
+
 '''
 This telegram bot is able to download media (images and videos) from an url.
 '''
@@ -26,8 +52,6 @@ class TelegramBot:
 
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
-
-    LIST_OF_ADMINS = []
 
     def __init__(self, config: dict):
 
@@ -65,9 +89,11 @@ class TelegramBot:
             """Gracefully stop the Updater and replace the current process with a new one"""
             updater.stop()
             print("[!] Stopped updater")
-            os.execl(sys.executable, sys.executable, *sys.argv)
-            print("[!] Executed program in new thread")
 
+            print("[!] Replacing this process with a new one...")
+            os.execl(sys.executable, sys.executable, *sys.argv)
+
+        @restricted
         def restart(update, context):
             print("[!] Restarting bot...")
             update.message.reply_text('Bot is restarting...')
@@ -230,6 +256,7 @@ class TelegramBot:
             update.message.reply_text("Only y/yes or n/no allowed..")
             return self.START_DOWNLOAD
 
+    @send_action(action=ChatAction.TYPING)
     def _download_file(self, request: DownloadRequest, session):
         manager = DownloadManager(
             request,

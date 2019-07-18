@@ -1,4 +1,4 @@
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 
 
 class Notifier:
@@ -71,3 +71,8 @@ class Notifier:
                 image_bytes,
                 caption=caption
             )
+
+    def bot_send_action(self):
+        self.bot.send_chat_action(chat_id=self.update.effective_message.chat_id, action=ChatAction.TYPING)
+
+
