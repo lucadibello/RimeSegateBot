@@ -1,39 +1,76 @@
+import datetime
+import os
+import urllib.parse
+import urllib.request
+from io import BytesIO
+
+import requests
+import youtube_dl
+from openload.api_exceptions import *
+from tqdm import tqdm
+
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
-from telegram import ChatAction
-from openload.api_exceptions import *
-from tqdm import tqdm
-from io import BytesIO
-import requests
-import urllib.request
-import urllib.parse
-import datetime
-import youtube_dl
-import os
-
-'''
-This class is used for downloading content from the internet using the python native library 'urllib' or "Youtube-DL"
-'''
 
 
 class DownloadManager:
+    """
+    This class is used for downloading content from the internet using the python
+    native library 'urllib' or "Youtube-DL". After the download the video will be
+    uploaded autonomously to OpenLoad (<a hred="http://openload.co">Visit website</a>).
+    """
+
     # Saves all the bytes downloaded bytes for the old download method hook
     TOT_DOWNLOADED = 0
 
     # Constructor method. It saves into an attribute the requested resource.
     def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper):
+        """
+        Parametrized constructor method.
+
+        :param download_req: DownloadRequest object that describes the user request (video url and filename).
+        :param notifier: Notifer object that will be used to notify the user (send messages)
+        :param openload: OpenloadWrapper object that will be used to upload the video on Openload.co website
+        """
+
         self.download_req = download_req
         self.notifier = notifier
         self.OL = openload
 
-        ''' Create progress bar '''
+        ''' Create progress bar (used with the old download method) '''
         self.bar = None
 
-    # This function is used for downloading the requested file
-    # from the internet and save it into a specific folder.
+    #
+    #
     def download_file(self, save_path, overwrite_check=False, automatic_filename=False, new_download_method=True,
                       convert_to_mp4=False):
+
+        """
+        This function is used for downloading the requested file from the internet and save it into a specific folder.
+
+        :param save_path: Folder where the file will be saved
+
+        :param overwrite_check: (Optional, default=False) If it's true the program will check if there's already a
+        file with the same name in the "save_path" folder otherwise it will do any type of check.
+
+        :param automatic_filename: (Optional, default=False) If it's true the program will generate a unique
+        filename to the downloaded video (current datetime in yyyMMdd-hhmmss format) otherwise the video will
+        have the one chosen before saved in the DownloadRequest object attribute.
+
+        :param new_download_method: (Optional, default=True) If it's true the program will use the new download
+        method (Youtube-DL embedded) which supports +800 websites and multiple videos
+        streams (es: segmented videos, normal videos, ...) otherwise it will use the plain HTTP Get request
+        do try to download the video from the web page (WARNING: it supports only the normal videos)
+
+        :param convert_to_mp4: (Optional, default=False) If it's true the program will convert all the downloaded
+        videos to mp4 format, otherwise the video file will not be converted after the download.
+        This option is supported only using the new download method and it requires ffmpeg installed on the system.
+        (WARNING: This video conversion can comport bad video quality and/or video/audio dystrosions)
+
+        :return: True if the download process finished successful otherwise a string object containing the error message.
+        """
+
         try:
             full_path = ""
             if not new_download_method:
@@ -72,6 +109,9 @@ class DownloadManager:
                 # Connects to the site and download the media
                 urllib.request.urlretrieve(self.download_req.url, full_path, self.download_progress)
 
+                # Uploads the video on OpenLoad
+                self._handle_download_finished(full_path, self.TOT_DOWNLOADED)
+
             else:
                 self.notifier.notify_information("Starting download")
                 self.notifier.notify_information("\
@@ -103,13 +143,6 @@ class DownloadManager:
         if automatic_filename:
             ''' It will save the file with a unique filename based on the computer time (date and hour) '''
             filename = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
-
-            """
-                CONVERTER:
-                
-                    
-                'format': "mp4",
-            """
 
             # Add output format
             ydl_opts.update({'outtmpl': save_path + "/" + filename + ".%(ext)s"})
@@ -246,6 +279,11 @@ class DownloadManager:
 
     @staticmethod
     def _get_file_extension(url: str) -> str:
+        """
+        This method is used to get the file extension out of a url (example: http://example.com/video.mp4)
+        :param url: Url where the extension will be extracted
+        :return: File extension as string object.
+        """
         url = urllib.parse.urlparse(url).path
         return url[url.rfind("."):]
 
@@ -254,17 +292,36 @@ class DownloadManager:
         return ''.join(e for e in filename if e.isalnum())
 
 
-# This logger is used by Youtube-DL for logging all the information related to the download process
 class DownloaderLogger(object):
+    """
+    This logger is used by Youtube-DL for logging all the information related to the download process
+    """
 
     def __init__(self, notifier: Notifier):
+        """
+        Parametrized constructor method.
+        :param notifier: Notifier object that will be used to send to the user messages.
+        """
+
         self.NOTIFIER = notifier
 
     def debug(self, msg):
+        """
+        This method will notify the user the debug information
+        :param msg: Debug message that will be send to the user.
+        """
         self.NOTIFIER.notify_debug(msg)
 
     def warning(self, msg):
+        """
+        This method will notify the user the warnings generated during the download process
+        :param msg: Warning message that will be send to the user.
+        """
         self.NOTIFIER.notify_warning(msg)
 
     def error(self, msg):
+        """
+        This method will notify the user the errors generated during the download process
+        :param msg: Error message that will be send to the user.
+        """
         self.NOTIFIER.notify_error(msg)
