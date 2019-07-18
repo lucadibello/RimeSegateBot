@@ -1,3 +1,0 @@
-- Send precentage of download to the user via telegram
-
-- youtube-dl support (windows)

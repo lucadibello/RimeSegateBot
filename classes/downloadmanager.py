@@ -148,7 +148,7 @@ class DownloadManager:
         if d["status"] == 'finished':
             print("Finished downloading video. Now converting...")
             self.notifier.notify_information("Converting video...")
-            self._handle_download_finished(d['filename'])
+            self._handle_download_finished(d['filename'], d["total_bytes"])
 
         elif d["status"] == 'downloading':
             print(d['filename'], d['_percent_str'], d['_eta_str'])
@@ -180,7 +180,7 @@ class DownloadManager:
             self.notifier.notify_information("Current download percentage: " + percentage)
 
     # This method handles all the post-download process
-    def _handle_download_finished(self, file_path):
+    def _handle_download_finished(self, file_path: str, filesize: float):
         # TODO: Upload video to OpenLoad
         try:
             self.notifier.notify_information(
@@ -196,6 +196,23 @@ class DownloadManager:
             self.notifier.notify_information("Wating OpenLoad to generate a thumbnail...")
 
             # TODO: Send thumbail
+
+            def get_thumbnail_stimed_generation_size(filesize: float):
+
+                if filesize is None:
+                    return None
+                else:
+                    # Latest test: 4% every ~20.28s (File size: 424.46 MB)
+                    return (filesize / ((filesize / 100) * 4)) * 20
+
+            estimated_time = get_thumbnail_stimed_generation_size(filesize)
+
+            if estimated_time is None:
+                self.notifier.notify_warning("Can't estimate a thumbnail generation time...")
+            else:
+                self.notifier.notify_warning(
+                    "Estimated time for thumbnail generation: " + str(get_thumbnail_stimed_generation_size(filesize)))
+
             thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"))
             print("[DownloadManager] Got a thumbnail url:", thumb_url)
             self.notifier.send_photo_bytes(

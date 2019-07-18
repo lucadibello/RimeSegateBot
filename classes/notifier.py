@@ -19,8 +19,8 @@ class Notifier:
         self.bot = bot
         self.VIDEO_TIMEOUT = send_video_timeout
 
-    def _notify(self, message):
-        self.update.message.reply_text(message, parse_mode=ParseMode.HTML)
+    def _notify(self, message, silent=False):
+        self.update.message.reply_text(message, parse_mode=ParseMode.HTML, disable_notification=silent)
 
     def notify_error(self, message):
         self._notify("{} {}".format(self.ERROR_EMOJI, message))
@@ -35,7 +35,7 @@ class Notifier:
         self._notify("{} {}".format(self.SUCCESS_EMOJI, message))
 
     def notify_debug(self, message):
-        self._notify("{} {}".format(self.DEBUG_EMOJI, message))
+        self._notify("{} {}".format(self.DEBUG_EMOJI, message), silent=True)
 
     def notify_custom(self, prefix, message):
         self._notify("{} {}".format(prefix, message))

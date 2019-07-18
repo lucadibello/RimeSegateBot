@@ -1,0 +1,6 @@
+python-telegram-bot==12.0.0b1
+requests==2.22.0
+pyopenload==0.7
+tqdm==4.32.2
+
+# Youtube DL: clone this repo [https://github.com/ytdl-org/youtube-dl.git] and run "python setup.py install"  

@@ -34,7 +34,14 @@ class OpenloadWrapper(OpenLoad):
         print("[OpenloadWrapper] Waiting {} seconds for thumbnail generation".format(self.THUMBNAIL_DELAY))
         time.sleep(self.THUMBNAIL_DELAY)
         try:
-            return self.splash_image(media_id)
+            url = self.splash_image(media_id)
+
+            if url is None or url == "None":
+                print("[OpenloadWrapper] Thumbnail request returned None. Retry...")
+                raise FileNotFoundException("None returned by OpenLoad, need to wait a bit more")
+            else:
+                return url
+
         except FileNotFoundException:
             print("[OpenloadWrapper] Thumbnail not ready yet")
             self.get_thumbnail_when_ready(media_id)

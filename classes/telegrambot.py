@@ -1,12 +1,18 @@
 
 
 import logging
+import os
+import sys
+from threading import Thread
+
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
+from telegram import ChatAction
 from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
 from classes.openloadwrapper import OpenloadWrapper
 from classes.urlchecker import UrlChecker
 from classes.notifier import Notifier
+from functools import wraps
 
 '''
 This telegram bot is able to download media (images and videos) from an url.
@@ -20,6 +26,8 @@ class TelegramBot:
 
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
+
+    LIST_OF_ADMINS = []
 
     def __init__(self, config: dict):
 
@@ -53,9 +61,22 @@ class TelegramBot:
         # Get the dispatcher to register handlers
         dp = updater.dispatcher
 
+        def stop_and_restart():
+            """Gracefully stop the Updater and replace the current process with a new one"""
+            updater.stop()
+            print("[!] Stopped updater")
+            os.execl(sys.executable, sys.executable, *sys.argv)
+            print("[!] Executed program in new thread")
+
+        def restart(update, context):
+            print("[!] Restarting bot...")
+            update.message.reply_text('Bot is restarting...')
+            Thread(target=stop_and_restart).start()
+
         # Register commands
         dp.add_handler(CommandHandler("start", self.start))
         dp.add_handler(CommandHandler("help", self.help))
+        dp.add_handler(CommandHandler("restart", restart))
 
         # Add error handler
         dp.add_error_handler(self.error)
