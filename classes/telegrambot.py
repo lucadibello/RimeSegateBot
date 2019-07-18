@@ -1,28 +1,31 @@
 import logging
 import os
 import sys
+from functools import wraps
 from threading import Thread
 
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler)
-from telegram import ChatAction
+from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, ConversationHandler)
+
 from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
+from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
 from classes.urlchecker import UrlChecker
-from classes.notifier import Notifier
-from functools import wraps
 
 LIST_OF_ADMINS = ["238454100"]
 
 
 def send_action(action):
     """Sends `action` while processing func command."""
+
     def decorator(func):
         @wraps(func)
         def command_func(update, context, *args, **kwargs):
             context.bot.send_chat_action(chat_id=update.effective_message.chat_id, action=action)
             return func(update, context, *args, **kwargs)
+
         return command_func
+
     return decorator
 
 
@@ -36,15 +39,13 @@ def restricted(func):
                                      text="Permission denied, you have to be an admin to use this command")
             return
         return func(update, context, *args, **kwargs)
+
     return wrapped
 
 
-'''
-This telegram bot is able to download media (images and videos) from an url.
-'''
-
-
 class TelegramBot:
+    """ This telegram bot is able to download media (images and videos) from an url. """
+
     # ConversationHandler steps
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
 
@@ -52,6 +53,11 @@ class TelegramBot:
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
 
     def __init__(self, config: dict):
+        """
+        Parametrized constructor method.
+
+        :param config: Config dictionary loaded using config.py and config.json
+        """
 
         # Create an empty DownloadRequest object for the download ConversationHandler
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
@@ -72,6 +78,8 @@ class TelegramBot:
         self.OL = OpenloadWrapper(self.CONFIG["openload_api_login"], self.CONFIG["openload_api_key"])
 
     def start_bot(self):
+        """ This method is used to start the telegram bot. """
+
         # Create the bot object
         updater = Updater(self.CONFIG["token"], use_context=True, request_kwargs={
             'read_timeout': self.CONFIG["readTimeout"],
@@ -84,17 +92,25 @@ class TelegramBot:
         dp = updater.dispatcher
 
         def stop_and_restart():
-            """Gracefully stop the Updater and replace the current process with a new one"""
+            """ Gracefully stop the Updater and replace the current process with a new one """
             updater.stop()
             print("[!] Stopped updater")
 
             print("[!] Replacing this process with a new one...")
+
+            # Replaces the old process with a new one
             os.execl(sys.executable, sys.executable, *sys.argv)
 
         @restricted
         def restart(update, context):
+            """
+                This method handles the '/restart' command and use the '@restricted' wrapper to check if the user
+                is in the admin list (LIST_OF_ADMINS string array)
+            """
             print("[!] Restarting bot...")
             update.message.reply_text('Bot is restarting...')
+
+            # Start restart operation in different thread
             Thread(target=stop_and_restart).start()
 
         # Register commands
@@ -134,6 +150,10 @@ class TelegramBot:
     '''
 
     def start(self, update, context):
+        """
+            This method handles the '/start'
+        """
+
         # Send a message when the command /start is issued
         print("[Bot] Received start command from", self._get_user_id(update))
 
@@ -141,10 +161,20 @@ class TelegramBot:
 
     @staticmethod
     def help(update, context):
+        """
+            This method handles the '/help' command
+        """
+
         # Send to the user all the listed commands with their descriptions
         update.message.reply_text("Just type /download.")
 
     def download(self, update, context):
+        """
+            This method handles the '/download' command. It start a conversation (3 steps)
+            with the user to determine the URL of the video resource to download and
+            the filename (if set in the config file)
+        """
+
         print("[Bot] Received download command from", self._get_user_id(update))
 
         # Create unique notifier for this user (every update -> different notifier)
@@ -165,6 +195,11 @@ class TelegramBot:
         return self.SET_DOWNLOAD_URL
 
     def check_download_url(self, update, context):
+        """
+            This method represents the 1° step of the download conversation. It asks the user to insert the video URL. It will check if the URL is formatted well (validator-like) and if
+            the site is reachable (HTTP GET Request with Reponse Code 200)
+        """
+
         # Create unique notifier for this user (every update -> different notifier)
         notifier = Notifier(update, self.BOT)
 
@@ -205,6 +240,13 @@ class TelegramBot:
             return self.SET_DOWNLOAD_URL
 
     def check_filename(self, update, context):
+        """
+            This method represents the 2° step of the download conversation. It asks the user to insert a
+            valid filename for the video (the filename have to be from 5 to 254 characters of length).
+            This step can be skipped if the config file the "automaticFilename" flag is set True or if
+            the "noDownloadWizard" flag is set at True.
+        """
+
         # Get last message sent by the user
         filename = update.message.text
 
@@ -224,6 +266,14 @@ class TelegramBot:
             return self.SET_FILE_NAME
 
     def download_confirmation(self, update, context):
+        """
+            This method represents the 3° and last step of the download conversation. It asks the user to
+            approve or deny the download process.
+            This is done by requesting a user input: If the user responds "y" or "yes" the download process continues,
+            if the user responds "n" or "no" the download process stops and will reset all the related variables.
+            Otherwise, if the user send a non valid input, it will ask again to send a new answer.
+        """
+
         # Get last message sent by the user
         msg = update.message.text
 
@@ -252,6 +302,13 @@ class TelegramBot:
             return self.START_DOWNLOAD
 
     def _download_file(self, request: DownloadRequest, session):
+        """
+        This method uses the DownloadManager class to download the user request.
+
+        :param request: DownloadRequest object that describes the user download request (url and filename"
+        :param session: Current user session. (Telegram.ext.Update object)
+        """
+
         manager = DownloadManager(
             request,
             notifier=Notifier(session, self.BOT, self.CONFIG["videoTimeout"]),
@@ -267,14 +324,30 @@ class TelegramBot:
         )
 
     def cancel_download_wizard(self, update, context):
+        """
+            This method is called when the conversation abort command is detected.
+            It quits the conversation between the user and the bot and resets the DownloadRequest object.
+        """
+
         # Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute
         update.message.reply_text("Exited downloading wizard!")
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
 
     def error(self, update, context):
+        """
+            This method is called when the bot telegram detects an exception/issue
+            that does not allow the correct operation of one or more functions.
+        """
+
         # Log Errors caused by Updates
         self.logger.warning('Update "%s" caused error "%s"', update, context.error)
 
     @staticmethod
     def _get_user_id(update):
+        """
+        Wrapper function that simplify the work of getting the user_id out of a Telegram.ext.Update object (session)
+        :param update: Telegram.ext.Update object (session object)
+        :return: The user id
+        """
+
         return update.message.chat_id
