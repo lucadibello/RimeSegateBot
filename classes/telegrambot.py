@@ -1,5 +1,3 @@
-
-
 import logging
 import os
 import sys
@@ -14,7 +12,7 @@ from classes.urlchecker import UrlChecker
 from classes.notifier import Notifier
 from functools import wraps
 
-LIST_OF_ADMINS = [""]
+LIST_OF_ADMINS = ["238454100"]
 
 
 def send_action(action):
@@ -24,7 +22,6 @@ def send_action(action):
         def command_func(update, context, *args, **kwargs):
             context.bot.send_chat_action(chat_id=update.effective_message.chat_id, action=action)
             return func(update, context, *args, **kwargs)
-
         return command_func
     return decorator
 
@@ -33,8 +30,10 @@ def restricted(func):
     @wraps(func)
     def wrapped(update, context, *args, **kwargs):
         user_id = update.effective_user.id
-        if user_id not in LIST_OF_ADMINS:
+        if str(user_id) not in LIST_OF_ADMINS:
             print("Unauthorized access denied for {}.".format(user_id))
+            context.bot.send_message(chat_id=update.effective_message.chat_id,
+                                     text="Permission denied, you have to be an admin to use this command")
             return
         return func(update, context, *args, **kwargs)
     return wrapped
@@ -46,7 +45,6 @@ This telegram bot is able to download media (images and videos) from an url.
 
 
 class TelegramBot:
-
     # ConversationHandler steps
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
 
@@ -71,7 +69,7 @@ class TelegramBot:
         self.BOT = None
 
         # Create openload object
-        self.OL = OpenloadWrapper(self.CONFIG["openload_api_login"], self.CONFIG["openload_api_key"], self.CONFIG["openloadThumbnailDelaySeconds"])
+        self.OL = OpenloadWrapper(self.CONFIG["openload_api_login"], self.CONFIG["openload_api_key"])
 
     def start_bot(self):
         # Create the bot object
@@ -130,7 +128,6 @@ class TelegramBot:
         # SIGTERM or SIGABRT. This should be used most of the time, since
         # start_polling() is non-blocking and will stop the bot gracefully.
         updater.idle()
-
 
     '''
         COMMAND HANDLERS
@@ -236,8 +233,6 @@ class TelegramBot:
             # Download file
             self._download_file(self.DOWNLOAD_REQUEST, update)
 
-            # TODO: Send the video to the user
-
             # End conversation
             return ConversationHandler.END
 
@@ -256,7 +251,6 @@ class TelegramBot:
             update.message.reply_text("Only y/yes or n/no allowed..")
             return self.START_DOWNLOAD
 
-    @send_action(action=ChatAction.TYPING)
     def _download_file(self, request: DownloadRequest, session):
         manager = DownloadManager(
             request,

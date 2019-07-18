@@ -11,8 +11,7 @@ class OpenloadWrapper(OpenLoad):
     def failed_conversions(self):
         pass
 
-    def __init__(self, username: str, password: str, thumbnail_retry_delay: int):
-        self.THUMBNAIL_DELAY = thumbnail_retry_delay
+    def __init__(self, username: str, password: str):
         super(OpenloadWrapper, self).__init__(username, password)
 
     def upload_large_file(self, file_path, **kwargs):
@@ -30,9 +29,10 @@ class OpenloadWrapper(OpenLoad):
 
         return response_json['result']
 
-    def get_thumbnail_when_ready(self, media_id):
-        print("[OpenloadWrapper] Waiting {} seconds for thumbnail generation".format(self.THUMBNAIL_DELAY))
-        time.sleep(self.THUMBNAIL_DELAY)
+    def get_thumbnail_when_ready(self, media_id, delay, threshold=0.25):
+        print("[OpenloadWrapper] Waiting {} seconds for thumbnail generation".format(delay))
+        time.sleep(delay + (delay*threshold))
+
         try:
             url = self.splash_image(media_id)
 
@@ -44,5 +44,5 @@ class OpenloadWrapper(OpenLoad):
 
         except FileNotFoundException:
             print("[OpenloadWrapper] Thumbnail not ready yet")
-            self.get_thumbnail_when_ready(media_id)
+            self.get_thumbnail_when_ready(media_id, delay)
 

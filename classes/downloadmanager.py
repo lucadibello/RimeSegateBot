@@ -198,27 +198,26 @@ class DownloadManager:
 
             # TODO: Send thumbail
 
-            def get_thumbnail_stimed_generation_size(filesize: float):
+            def get_thumbnail_estimated_generation_size(size: float):
 
-                if filesize is None:
+                if size is None:
                     return None
                 else:
-                    # Latest test: 4% every ~20.28s (File size: 424.46 MB)
-                    return (filesize / ((filesize / 100) * 4)) * 20
+                    # Latest test: 4% every ~20.28s (File size: 424.46 MB) -> 4.2445 MB/s == 4450680.832 Byte/s
+                    BYTES_ANALYSED_EVERY_20_SEC = 4450681
+                    time = (size / BYTES_ANALYSED_EVERY_20_SEC) * 20
+                    return time
 
-            estimated_time = get_thumbnail_stimed_generation_size(filesize)
+            estimated_time = get_thumbnail_estimated_generation_size(filesize)
 
             if estimated_time is None:
                 self.notifier.notify_warning("Can't estimate a thumbnail generation time...")
             else:
                 self.notifier.notify_warning(
-                    "Estimated time for thumbnail generation: " + str(
-                        get_thumbnail_stimed_generation_size(filesize))) + " seconds"
+                    "Estimated time for thumbnail generation {} seconds".format(estimated_time))
 
-            thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"))
+            thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
             print("[DownloadManager] Got a thumbnail url:", thumb_url)
-
-            self.notifier.bot_send_action(ChatAction.TYPING)
 
             self.notifier.send_photo_bytes(
                 self.download_image_stream(thumb_url),
