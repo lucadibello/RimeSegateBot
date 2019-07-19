@@ -7,6 +7,9 @@ from requests_toolbelt.multipart import encoder
 
 
 class OpenloadWrapper(OpenLoad):
+    """
+    This class is more than an "extender" than a "wrapper". In fact this class extends OpenLoad class adding two more methods.
+    """
 
     def failed_conversions(self):
         pass
