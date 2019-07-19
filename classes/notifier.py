@@ -4,6 +4,11 @@ from telegram import ParseMode
 
 
 class Notifier:
+    """
+    This class is a wrapper class that makes easy to send specific messages to the user.
+    It can also send video files (Max 50MB)
+    """
+
     ERROR_EMOJI = "❌"
     WARNING_EMOJI = "⚠️"
     INFO_EMOJI = "ℹ️"
