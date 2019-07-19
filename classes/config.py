@@ -1,5 +1,6 @@
 import json
 
+
 class Config:
     """ This class is used for manage the config file """
 
@@ -32,20 +33,6 @@ class Config:
         with open(self.filepath) as json_file:
             return json.load(json_file)
 
-    def create_default_file(self):
-        """
-        This function is used for generating a default config file.
-        """
-        # TODO: Finish
-
-        default_config = {
-            "automaticName": True,
-            "saveFolder": "download",
-            "overwriteCheck": True,
-            "token": "INSERT YOUR TOKEN HERE"
-        }
-
-        self._write_json(default_config)
 
     def check_config_file(self):
         """
