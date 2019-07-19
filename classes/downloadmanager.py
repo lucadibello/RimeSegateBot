@@ -100,7 +100,6 @@ class DownloadManager:
                 full_path = os.path.join(save_path, filename)
 
                 ''' Check for overwrite if it's enabled '''
-                # TODO: Move overwrite check before downloading
                 if overwrite_check:
                     print("[!] Starting overwrite check")
                     if not self.overwrite_check(save_path, filename):

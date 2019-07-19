@@ -22,7 +22,7 @@ class Config:
 
         with open(self.filepath, 'w+') as outfile:
             json.dump(data, outfile)
-    
+
     def _read_json(self) -> dict:
         """
         This private function is used for reading all the settings stored in the config file.
@@ -32,7 +32,6 @@ class Config:
 
         with open(self.filepath) as json_file:
             return json.load(json_file)
-
 
     def check_config_file(self):
         """

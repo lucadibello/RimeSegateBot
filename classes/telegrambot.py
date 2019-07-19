@@ -104,8 +104,8 @@ class TelegramBot:
         @restricted
         def restart(update, context):
             """
-                This method handles the '/restart' command and use the '@restricted' wrapper to check if the user
-                is in the admin list (LIST_OF_ADMINS string array)
+            This method handles the '/restart' command and use the '@restricted' wrapper to check if the user
+            is in the admin list (LIST_OF_ADMINS string array)
             """
             print("[!] Restarting bot...")
             update.message.reply_text('Bot is restarting...')
@@ -151,7 +151,7 @@ class TelegramBot:
 
     def start(self, update, context):
         """
-            This method handles the '/start'
+        This method handles the '/start'
         """
 
         # Send a message when the command /start is issued
@@ -162,7 +162,7 @@ class TelegramBot:
     @staticmethod
     def help(update, context):
         """
-            This method handles the '/help' command
+        This method handles the '/help' command
         """
 
         # Send to the user all the listed commands with their descriptions
@@ -170,9 +170,9 @@ class TelegramBot:
 
     def download(self, update, context):
         """
-            This method handles the '/download' command. It start a conversation (3 steps)
-            with the user to determine the URL of the video resource to download and
-            the filename (if set in the config file)
+        This method handles the '/download' command. It start a conversation (3 steps)
+        with the user to determine the URL of the video resource to download and
+        the filename (if set in the config file)
         """
 
         print("[Bot] Received download command from", self._get_user_id(update))
@@ -196,8 +196,8 @@ class TelegramBot:
 
     def check_download_url(self, update, context):
         """
-            This method represents the 1° step of the download conversation. It asks the user to insert the video URL. It will check if the URL is formatted well (validator-like) and if
-            the site is reachable (HTTP GET Request with Reponse Code 200)
+        This method represents the 1° step of the download conversation. It asks the user to insert the video URL. It will check if the URL is formatted well (validator-like) and if
+        the site is reachable (HTTP GET Request with Reponse Code 200)
         """
 
         # Create unique notifier for this user (every update -> different notifier)
@@ -241,10 +241,10 @@ class TelegramBot:
 
     def check_filename(self, update, context):
         """
-            This method represents the 2° step of the download conversation. It asks the user to insert a
-            valid filename for the video (the filename have to be from 5 to 254 characters of length).
-            This step can be skipped if the config file the "automaticFilename" flag is set True or if
-            the "noDownloadWizard" flag is set at True.
+        This method represents the 2° step of the download conversation. It asks the user to insert a
+        valid filename for the video (the filename have to be from 5 to 254 characters of length).
+        This step can be skipped if the config file the "automaticFilename" flag is set True or if
+        the "noDownloadWizard" flag is set at True.
         """
 
         # Get last message sent by the user
@@ -267,11 +267,11 @@ class TelegramBot:
 
     def download_confirmation(self, update, context):
         """
-            This method represents the 3° and last step of the download conversation. It asks the user to
-            approve or deny the download process.
-            This is done by requesting a user input: If the user responds "y" or "yes" the download process continues,
-            if the user responds "n" or "no" the download process stops and will reset all the related variables.
-            Otherwise, if the user send a non valid input, it will ask again to send a new answer.
+        This method represents the 3° and last step of the download conversation. It asks the user to
+        approve or deny the download process.
+        This is done by requesting a user input: If the user responds "y" or "yes" the download process continues,
+        if the user responds "n" or "no" the download process stops and will reset all the related variables.
+        Otherwise, if the user send a non valid input, it will ask again to send a new answer.
         """
 
         # Get last message sent by the user
@@ -325,8 +325,8 @@ class TelegramBot:
 
     def cancel_download_wizard(self, update, context):
         """
-            This method is called when the conversation abort command is detected.
-            It quits the conversation between the user and the bot and resets the DownloadRequest object.
+        This method is called when the conversation abort command is detected.
+        It quits the conversation between the user and the bot and resets the DownloadRequest object.
         """
 
         # Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute
@@ -335,8 +335,8 @@ class TelegramBot:
 
     def error(self, update, context):
         """
-            This method is called when the bot telegram detects an exception/issue
-            that does not allow the correct operation of one or more functions.
+        This method is called when the bot telegram detects an exception/issue
+        that does not allow the correct operation of one or more functions.
         """
 
         # Log Errors caused by Updates

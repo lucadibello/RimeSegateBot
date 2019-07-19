@@ -1,6 +1,7 @@
+import re
+
 import requests
 from urllib3.exceptions import MaxRetryError
-import re
 
 
 class UrlChecker:
