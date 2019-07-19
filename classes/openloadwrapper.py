@@ -45,7 +45,7 @@ class OpenloadWrapper(OpenLoad):
 
         return response_json['result']
 
-    def get_thumbnail_when_ready(self, media_id, delay, threshold=0.25):
+    def get_thumbnail_when_ready(self, media_id, delay, threshold=0.1):
         """
         This method is used to get the thumbnail image url when it's ready on OpenLoad.co.
 
@@ -60,12 +60,17 @@ class OpenloadWrapper(OpenLoad):
 
         try:
             url = self.splash_image(media_id)
+            # TODO: Returns NONE, need to fix
+            return url
 
+            '''
             if url is None or url == "None":
                 print("[OpenloadWrapper] Thumbnail request returned None. Retry...")
                 raise FileNotFoundException("None returned by OpenLoad, need to wait a bit more")
             else:
+                print("[OpenLoadWrapper] Found a url: {} Type of: {}".format(url, type(url)))
                 return url
+            '''
 
         except FileNotFoundException:
             print("[OpenloadWrapper] Thumbnail not ready yet")

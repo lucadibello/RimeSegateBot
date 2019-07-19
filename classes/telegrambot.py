@@ -6,7 +6,6 @@ from threading import Thread
 
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, ConversationHandler)
 
-from classes.downloadmanager import DownloadManager
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
@@ -51,6 +50,9 @@ class TelegramBot:
 
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
+
+    # Thumbnails (<user_id>: <list_of_thumbnails>)
+    THUMBNAILS = {}
 
     def __init__(self, config: dict):
         """
@@ -117,6 +119,7 @@ class TelegramBot:
         dp.add_handler(CommandHandler("start", self.start))
         dp.add_handler(CommandHandler("help", self.help))
         dp.add_handler(CommandHandler("restart", restart))
+        dp.add_handler(CommandHandler("thumbnail", self.thumbnail))
 
         # Add error handler
         dp.add_error_handler(self.error)
@@ -155,7 +158,7 @@ class TelegramBot:
         """
 
         # Send a message when the command /start is issued
-        print("[Bot] Received start command from", self._get_user_id(update))
+        print("[Bot] Received start command from", self.get_user_id(update))
 
         update.message.reply_text("Hello my boi. Welcome.")
 
@@ -175,7 +178,7 @@ class TelegramBot:
         the filename (if set in the config file)
         """
 
-        print("[Bot] Received download command from", self._get_user_id(update))
+        print("[Bot] Received download command from", self.get_user_id(update))
 
         # Create unique notifier for this user (every update -> different notifier)
         notifier = Notifier(update, self.BOT)
@@ -193,6 +196,23 @@ class TelegramBot:
         notifier.notify_custom(":one:", "Send me a the media url")
 
         return self.SET_DOWNLOAD_URL
+
+    def thumbnail(self, update, context):
+        notifier = Notifier(update, self.BOT)
+        try:
+            thumbnail_url = self.THUMBNAILS[self.get_user_id(update)]
+
+            if thumbnail_url is None:
+                print("You have first to upload the video to OpenLoad to access this function..")
+            else:
+                from classes.downloadrequest import DownloadRequest
+                print("You have a thumbnail!!! " + thumbnail_url)
+                notifier.send_photo_bytes(
+                    DownloadRequest.download_image_stream(thumbnail_url)
+                )
+        except KeyError:
+            notifier.notify_warning("You haven't downloaded any videos...")
+
 
     def check_download_url(self, update, context):
         """
@@ -251,7 +271,6 @@ class TelegramBot:
         filename = update.message.text
 
         if 4 < len(filename) < 255:
-            # TODO: CHECK FOR VALID FILENAME
             # Check with regex if it's a valid filename
             update.message.reply_text("Shitty name but is okay..")
 
@@ -308,6 +327,7 @@ class TelegramBot:
         :param request: DownloadRequest object that describes the user download request (url and filename"
         :param session: Current user session. (Telegram.ext.Update object)
         """
+        from classes.downloadmanager import DownloadManager
 
         manager = DownloadManager(
             request,
@@ -343,7 +363,7 @@ class TelegramBot:
         self.logger.warning('Update "%s" caused error "%s"', update, context.error)
 
     @staticmethod
-    def _get_user_id(update):
+    def get_user_id(update):
         """
         Wrapper function that simplify the work of getting the user_id out of a Telegram.ext.Update object (session)
         :param update: Telegram.ext.Update object (session object)

@@ -21,6 +21,11 @@ class Notifier:
     OPENLOAD_FILE_TYPE = "🗃️"
     OPENLOAD_URL = "🌎"
 
+    ''' Caption Prefix Emoji '''
+    TITLE_EMOJI = ""
+    MODEL_EMOJI = ""
+    CATEGORY_EMOJI = ""
+
     def __init__(self, update, bot, send_video_timeout=80):
         """
         Parametrized constructor method.
@@ -108,7 +113,7 @@ class Notifier:
             timeout=self.VIDEO_TIMEOUT
         )
 
-    def notify_openload_response(self, response: Dict):
+    def notify_openload_response(self, response: dict):
         """
         This method is used to notify the user that the video has been successfully uploaded to OpenLoad.co
         :param response: OpenLoad.co response after upload as Dict object (Dictionary).
@@ -144,3 +149,29 @@ class Notifier:
                 image_bytes,
                 caption=caption
             )
+
+    def generate_caption(self, url, title, models: list, categories: list):
+        def cycle_formatter(data: list):
+            string = ""
+            for i in range(len(data)):
+                if i != (len(data) - 1):
+                    string += data[i] + ", "
+                else:
+                    string += data[i]
+            return string
+
+        models = cycle_formatter(models)
+        categories = cycle_formatter(categories)
+
+        return "{} Title: {}\n\r" \
+               "{} Model: {}\n\r" \
+               "{} Categories: {}\n\r" \
+               "{} Url: {}\n\r".format(
+            self.TITLE_EMOJI, title,
+            self.MODEL_EMOJI, models,
+            self.CATEGORY_EMOJI, categories,
+            self.OPENLOAD_URL, url
+        )
+
+    def get_session(self):
+        return self.update

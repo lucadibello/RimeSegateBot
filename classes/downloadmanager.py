@@ -7,11 +7,13 @@ from io import BytesIO
 import requests
 import youtube_dl
 from openload.api_exceptions import *
+from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, Filters
 from tqdm import tqdm
 
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
+from classes.telegrambot import TelegramBot
 
 
 class DownloadManager:
@@ -23,6 +25,12 @@ class DownloadManager:
 
     # Saves all the bytes downloaded bytes for the old download method hook
     TOT_DOWNLOADED = 0
+
+    # Finish conversation steps
+    SET_MODEL, SET_CATEGORIES, SET_URL = range(3)
+
+    # Openload.co Thumbnail URL
+    THUMBNAIL_URL = None
 
     # Constructor method. It saves into an attribute the requested resource.
     def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper):
@@ -247,7 +255,6 @@ class DownloadManager:
         :param filesize: File size in bytes, used for estimate the video thumbnail generation by OpenLoad.co
         """
 
-        # TODO: Upload video to OpenLoad
         try:
             self.notifier.notify_information(
                 "Uploading file to Openload, this will take some time (depends from filesize)")
@@ -260,8 +267,6 @@ class DownloadManager:
             self.notifier.notify_openload_response(response)
 
             self.notifier.notify_information("Wating OpenLoad to generate a thumbnail...")
-
-            # TODO: Send thumbail
 
             def get_thumbnail_estimated_generation_size(size: float):
 
@@ -284,10 +289,10 @@ class DownloadManager:
             thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
             print("[DownloadManager] Got a thumbnail url:", thumb_url)
 
-            self.notifier.send_photo_bytes(
-                self.download_image_stream(thumb_url),
-                "Video thumbnail"
-            )
+            TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = thumb_url
+
+            self.notifier.notify_success(
+                "I found the thumbnail on OpenLoad.co, to generate a caption use '/thumbnail' command")
 
         except PermissionDeniedException as pde:
             self.notifier.notify_error("Permission denied detected while trying to upload data to openload:" + str(pde))
