@@ -287,6 +287,12 @@ class DownloadManager:
                     "Estimated time for thumbnail generation {} seconds".format(estimated_time))
 
             thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
+
+            # Checker
+            while thumb_url is None:
+                print("[DownloadManager] Invalid thumbnail (None), retry to get a thumbnail")
+                thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=5)
+
             print("[DownloadManager] Got a thumbnail url:", thumb_url)
 
             TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = thumb_url
