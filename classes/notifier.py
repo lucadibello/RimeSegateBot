@@ -22,9 +22,9 @@ class Notifier:
     OPENLOAD_URL = "🌎"
 
     ''' Caption Prefix Emoji '''
-    TITLE_EMOJI = ""
-    MODEL_EMOJI = ""
-    CATEGORY_EMOJI = ""
+    TITLE_EMOJI = "📜"
+    MODEL_EMOJI = "👧"
+    CATEGORY_EMOJI = "🗃️"
 
     def __init__(self, update, bot, send_video_timeout=80):
         """
@@ -142,35 +142,28 @@ class Notifier:
             self.bot.send_photo(
                 self.update.message.chat_id,
                 image_bytes,
+                parse_mode=ParseMode.HTML
             )
         else:
             self.bot.send_photo(
                 self.update.message.chat_id,
                 image_bytes,
-                caption=caption
+                caption=caption,
+                parse_mode=ParseMode.HTML
             )
 
-    def generate_caption(self, url, title, models: list, categories: list):
-        def cycle_formatter(data: list):
-            string = ""
-            for i in range(len(data)):
-                if i != (len(data) - 1):
-                    string += data[i] + ", "
-                else:
-                    string += data[i]
-            return string
-
-        models = cycle_formatter(models)
-        categories = cycle_formatter(categories)
+    def generate_caption(self, thumbnail):
+        models = ", ".join(thumbnail.MODELS)
+        categories = ", ".join(thumbnail.CATEGORIES)
 
         return "{} Title: {}\n\r" \
                "{} Model: {}\n\r" \
                "{} Categories: {}\n\r" \
-               "{} Url: {}\n\r".format(
-            self.TITLE_EMOJI, title,
+               "{} Url: <a href='{}'>Website Url</a>\n\r".format(
+            self.TITLE_EMOJI, thumbnail.TITLE,
             self.MODEL_EMOJI, models,
             self.CATEGORY_EMOJI, categories,
-            self.OPENLOAD_URL, url
+            self.OPENLOAD_URL, thumbnail.VIDEO_URL
         )
 
     def get_session(self):

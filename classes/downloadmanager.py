@@ -26,12 +26,6 @@ class DownloadManager:
     # Saves all the bytes downloaded bytes for the old download method hook
     TOT_DOWNLOADED = 0
 
-    # Finish conversation steps
-    SET_MODEL, SET_CATEGORIES, SET_URL = range(3)
-
-    # Openload.co Thumbnail URL
-    THUMBNAIL_URL = None
-
     # Constructor method. It saves into an attribute the requested resource.
     def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper):
         """
@@ -128,7 +122,7 @@ class DownloadManager:
                 self._download(save_path, self.download_req, automatic_filename, convert_to_mp4=convert_to_mp4)
 
             print("[Downloader] File named {} saved correctly".format(full_path))
-            self.notifier.notify_success("File downloaded and saved correctly.")
+            self.notifier.notify_success("File downloaded and uploaded correctly!.")
 
             return True
 
@@ -295,7 +289,8 @@ class DownloadManager:
 
             print("[DownloadManager] Got a thumbnail url:", thumb_url)
 
-            TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = thumb_url
+            from classes.thumbnail import Thumbnail
+            TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(thumb_url)
 
             self.notifier.notify_success(
                 "I found the thumbnail on OpenLoad.co, to generate a caption use '/thumbnail' command")
