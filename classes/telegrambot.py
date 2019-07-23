@@ -360,6 +360,11 @@ class TelegramBot:
                     "We detected that you have already uploaded a video on OpenLoad so you can start build your caption"
                 )
 
+                notifier.notify_success(
+                    "This is a wizard that helps you to generate a nice caption for your thumbnail. "
+                    "You can type 'exit' in any moment to abort the process!"
+                )
+
                 print("[Thumbnail] User {} has a valid thumbnail URL saved: {}".format(
                     self.get_user_id(update),
                     thumbnail.URL)
