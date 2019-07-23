@@ -3,7 +3,7 @@ class Thumbnail:
     MODELS = []
     CATEGORIES = []
     URL = ""
-    TITLE = "WORK IN PROGESS"
+    TITLE = ""
     VIDEO_URL = ""
 
     def __init__(self, url):
@@ -24,5 +24,17 @@ class Thumbnail:
     def set_url(self, url):
         self.URL = url
 
+    def set_title(self, title):
+        self.TITLE = title
+
     def set_video_url(self, video_url):
         self.VIDEO_URL = video_url
+
+    def to_dict(self):
+        return {
+            "url": self.URL,
+            "title": self.TITLE,
+            "video_url": self.VIDEO_URL,
+            "models": self.MODELS,
+            "categories": self.CATEGORIES
+        }

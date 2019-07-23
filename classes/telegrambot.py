@@ -12,7 +12,7 @@ from classes.openloadwrapper import OpenloadWrapper
 from classes.urlchecker import UrlChecker
 from classes.thumbnail import Thumbnail
 
-LIST_OF_ADMINS = ["238454100"]
+LIST_OF_ADMINS = ["238454100", "68736753"]
 
 
 def send_action(action):
@@ -50,14 +50,14 @@ class TelegramBot:
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
 
     # Thumbnail conversation steps
-    SET_MODEL, SET_CATEGORIES, SET_URL = range(3)
+    SET_VIDEO_NAME, SET_MODEL, SET_CATEGORIES, SET_URL = range(4)
 
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
 
     # Thumbnails (<user_id>: <list_of_thumbnails>)
     # THUMBNAILS = {238454100: Thumbnail("https://thumb.oloadcdn.net/splash/If7YlOXCS6g/m079Oq-Dmtg.jpg")}
-    THUMBNAILS = {}
+    THUMBNAILS = {68736753: Thumbnail("https://thumb.oloadcdn.net/splash/pZSrxv2Pxgk/vo1AjwKzRmo.jpg")}
 
     def __init__(self, config: dict):
         """
@@ -143,6 +143,7 @@ class TelegramBot:
         thumbnail_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('thumbnail', self.thumbnail)],
             states={
+                 self.SET_VIDEO_NAME: [MessageHandler(Filters.text, self.thumbnail_set_video_name, pass_user_data=True)],
                  self.SET_MODEL: [MessageHandler(Filters.text, self.thumbnail_set_model, pass_user_data=True)],
                  self.SET_CATEGORIES: [MessageHandler(Filters.text, self.thumbnail_set_categories, pass_user_data=True)],
                  self.SET_URL: [MessageHandler(Filters.text, self.thumbnail_set_url, pass_user_data=True)]
@@ -209,7 +210,7 @@ class TelegramBot:
                                       PS: you can exit this wizard any time you want, you have just to type 'exit'")
 
         # Go to the first step
-        notifier.notify_custom(":one:", "Send me a the media url")
+        notifier.notify_custom("1️", "Send me a video url")
 
         return self.SET_DOWNLOAD_URL
 
@@ -364,12 +365,9 @@ class TelegramBot:
                     thumbnail.URL)
                 )
 
-                notifier.notify_information(
-                    "Please, list all the models present in the video (names separated by {}).\
-                    (Example: Sasha Grey;Mia Khalifa;...".format(self.CONFIG["thumbnailArgumentDivider"])
-                )
+                notifier.notify_information("Select a video name. PS: It can't be only spaces!")
 
-                return self.SET_MODEL
+                return self.SET_VIDEO_NAME
 
         except KeyError:
             print("[Thumbnail] Can't find user id in list..")
@@ -377,6 +375,34 @@ class TelegramBot:
             notifier.notify_warning("You haven't downloaded any videos...")
 
             return ConversationHandler.END
+
+    def thumbnail_set_video_name(self, update, context):
+        notifier = Notifier(update, self.BOT)
+
+        # Get last message sent by the user
+        msg = update.message.text.strip()
+
+        print("[Thumbnail] User {} select a message: {}".format(
+            self.get_user_id(update),
+            msg
+        ))
+
+        if len(msg) > 0:
+            self.THUMBNAILS[self.get_user_id(update)].set_title(msg)
+            notifier.notify_success("'{}' is a valid video name".format(msg))
+
+            notifier.notify_information(
+                "Please, list all the models present in the video (names separated with '{}' ).\
+                (Example: Sasha Grey;Mia Khalifa;...".format(self.CONFIG["thumbnailArgumentDivider"])
+            )
+
+            return self.SET_MODEL
+        else:
+            # Invalid name detected
+            notifier.notify_error("Invalid name, please try again")
+            return self.SET_VIDEO_NAME
+
+        # Get models and set them into the Thumbnail object
 
     def thumbnail_set_model(self, update, context):
         notifier = Notifier(update, self.BOT)
@@ -388,6 +414,12 @@ class TelegramBot:
         models = msg.split(self.CONFIG["thumbnailArgumentDivider"])
         self.THUMBNAILS[self.get_user_id(update)].set_models(models)
         notifier.notify_success('I detected {} models!'.format(len(models)))
+
+        print("[Thumbnail] User {} selected {} model(s): {}".format(
+            self.get_user_id(update),
+            len(models),
+            models
+        ))
 
         # Proceed to the next step
         notifier.notify_information(
@@ -407,7 +439,13 @@ class TelegramBot:
         # Get categories and set them into the Thumbnail object
         categories = msg.split(self.CONFIG["thumbnailArgumentDivider"])
         self.THUMBNAILS[self.get_user_id(update)].set_categories(categories)
-        notifier.notify_success('I detected {} models!'.format(len(categories)))
+        notifier.notify_success('I detected {} categories!'.format(len(categories)))
+
+        print("[Thumbnail] User {} selected {} categories: {}".format(
+            self.get_user_id(update),
+            len(categories),
+            categories
+        ))
 
         # Proceed to the next step
         notifier.notify_information(
@@ -426,9 +464,14 @@ class TelegramBot:
         url = update.message.text.strip()
 
         if checker.full_check(url):
-            # Url valid (well-formatted & rechable)
+            # Url valid (well-formatted & reachable)
             notifier.notify_success("The URL is well-formatted and reachable via HTTP GET requests.")
-            self.THUMBNAILS[self.get_user_id(update)].VIDEO_URL = url
+            self.THUMBNAILS[self.get_user_id(update)].set_video_url(url)
+
+            print("[Thumbnail] User {} selected a url for the caption: {}".format(
+                self.get_user_id(update),
+                url
+            ))
 
             # Send image with caption
             notifier.notify_information("Generating image with caption...")
@@ -442,12 +485,15 @@ class TelegramBot:
                 "The url is not well-formatted or is not reachable via HTTP GET requests... Check the URL and try again"
             )
 
-            # Restart set URL
+            # Restart to 'set URL'
             return self.SET_URL
 
     @staticmethod
     def _build_thumbnail_message(notifier: Notifier, thumbnail: Thumbnail):
         from classes.downloadmanager import DownloadManager
+
+        print("[Thumbnail] Generating message with these values:")
+        print(thumbnail.to_dict())
 
         notifier.send_photo_bytes(
             DownloadManager.download_image_stream(thumbnail.URL),
