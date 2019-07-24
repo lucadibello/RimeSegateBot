@@ -30,6 +30,13 @@ def send_action(action):
 
 
 def restricted(func):
+    """
+    This function is used to restrict access to a function only,
+    so the function can be used only to a bunch of users (identified by theirs chat_ids).
+    The list of non-restricted users it's saved in "LIST_OF_ADMINS" at row 15.
+    :param func: Function to restrict.
+    """
+
     @wraps(func)
     def wrapped(update, context, *args, **kwargs):
 
@@ -46,7 +53,9 @@ def restricted(func):
 
 
 class TelegramBot:
-    """ This telegram bot is able to download media (images and videos) from an url. """
+    """
+    This telegram bot is able to download media (images and videos) from an url.
+    """
 
     # ConversationHandler steps
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
@@ -142,8 +151,7 @@ class TelegramBot:
                        MessageHandler(Filters.command, self.cancel_download_wizard)],
         )
 
-        # fallbacks=[MessageHandler(Filters.regex('^exit$'), self.cancel_download_wizard)]
-
+        # ConversationHandler for thumbnail command.
         thumbnail_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('thumbnail', self.thumbnail)],
             states={
@@ -155,7 +163,6 @@ class TelegramBot:
             fallbacks=[CommandHandler('cancel', self.cancel_thumbnail_wizard), MessageHandler(Filters.command, self.cancel_thumbnail_wizard)],
         )
 
-        # fallbacks=[MessageHandler(Filters.regex('^exit$'), self.cancel_download_wizard)]
 
         # Register all the the conversation handler
         dp.add_handler(conversation_handler)
@@ -350,6 +357,12 @@ class TelegramBot:
         )
 
     def thumbnail(self, update, context):
+        """
+        This method handles the '/thumbnail' command. It start a conversation (4 steps)
+        with the user to determine the name of the video, the models of the video, the
+        video's categories and the video URL.
+        """
+
         notifier = Notifier(update, self.BOT)
 
         try:
@@ -388,6 +401,11 @@ class TelegramBot:
             return ConversationHandler.END
 
     def thumbnail_set_video_name(self, update, context):
+        """
+        This method represents the 1° step of the thumbnail conversation. It asks the user to insert a
+        valid name for the video (the filename have to be from 5 to 254 characters of length).
+        """
+
         notifier = Notifier(update, self.BOT)
 
         # Get last message sent by the user
@@ -398,7 +416,7 @@ class TelegramBot:
             msg
         ))
 
-        if len(msg) > 0:
+        if 4 < len(msg) < 255:
             self.THUMBNAILS[self.get_user_id(update)].set_title(msg)
             notifier.notify_success("'{}' is a valid video name".format(msg))
 
@@ -413,9 +431,12 @@ class TelegramBot:
             notifier.notify_error("Invalid name, please try again")
             return self.SET_VIDEO_NAME
 
-        # Get models and set them into the Thumbnail object
-
     def thumbnail_set_model(self, update, context):
+        """
+        This method represents the 2° step of the thumbnail conversation. It asks the user to insert a
+        list of models separated by the character selected in the config file (thumbnailArgumentDivider setting).
+        """
+
         notifier = Notifier(update, self.BOT)
 
         # Get last message sent by the user
@@ -442,6 +463,11 @@ class TelegramBot:
         return self.SET_CATEGORIES
 
     def thumbnail_set_categories(self, update, context):
+        """
+        This method represents the 3° step of the thumbnail conversation. It asks the user to insert a
+        list of categories separated by the character selected in the config file (thumbnailArgumentDivider setting).
+        """
+
         notifier = Notifier(update, self.BOT)
 
         # Get last message sent by the user
@@ -468,6 +494,12 @@ class TelegramBot:
         return self.SET_URL
 
     def thumbnail_set_url(self, update, context):
+        """
+        This method represents the 4° and last step of the thumbnail conversation.
+        It asks the user to insert a valid (well-formatted) and reachable via HTTP GET request URL.
+        The URL will be validated by the UrlChecker class.
+        """
+
         notifier = Notifier(update, self.BOT)
         checker = UrlChecker()
 
@@ -506,6 +538,13 @@ class TelegramBot:
 
     @staticmethod
     def _build_thumbnail_message(notifier: Notifier, thumbnail: Thumbnail):
+        """
+        This method is used to generate the caption for the thumbnail using all the data
+        saved in the passed Thumbnail object. It will also send the full message (thumbnail + caption) to the user.
+        :param notifier Notifier object used to send messages to the user in a fancy way.
+        :param thumbnail Thumbnail object with all the required data (thumbnail url, models, categories, ...)
+        """
+
         from classes.downloadmanager import DownloadManager
 
         print("[Thumbnail] Generating message with these values:")
@@ -518,6 +557,11 @@ class TelegramBot:
 
     @restricted
     def thumbnail_b1(self, update, context):
+        """
+        WARNING: FOR TESTING ONLY
+        This method will download the Thumbnail from OpenLoad using its APIs.
+        """
+
         notifier = Notifier(update, self.BOT)
         try:
             print("[Thumbnail] Check if user with id {} has downloaded any videos..".format(self.get_user_id(update)))
@@ -551,11 +595,16 @@ class TelegramBot:
         return ConversationHandler.END
 
     def cancel_thumbnail_wizard(self, update, context):
+        """
+        This method is called when the conversation abort command is detected.
+        It quits the conversation between the user and the bot and resets the Thumbnail object object.
+        """
+
         notify = Notifier(update, self.BOT)
         url = self.THUMBNAILS[self.get_user_id(update)].URL
         self.THUMBNAILS[self.get_user_id(update)] = Thumbnail(url)
 
-        notify.notify_information("Exited thumbnail wizard, I've cleared all saved data!"
+        notify.notify_success("Exited thumbnail wizard, I've cleared all saved data!"
                                   "If you wanna build again a message you can use '/thumbnail' without any problem")
         print("[Thumbnail Wizard] User {} aborted download wizard".format(self.get_user_id(update)))
         return ConversationHandler.END
