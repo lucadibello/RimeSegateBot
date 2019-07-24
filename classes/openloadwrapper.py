@@ -45,7 +45,7 @@ class OpenloadWrapper(OpenLoad):
 
         return response_json['result']
 
-    def get_thumbnail_when_ready(self, media_id, delay, threshold=0.1):
+    def get_thumbnail_when_ready(self, media_id, delay, threshold=0.0):
         """
         This method is used to get the thumbnail image url when it's ready on OpenLoad.co.
 

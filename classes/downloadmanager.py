@@ -284,7 +284,8 @@ class DownloadManager:
                 self.notifier.notify_warning(
                     "Estimated time for thumbnail generation {} seconds".format(estimated_time))
 
-            thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
+            # thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
+            thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=60)
 
             # Checker
             while thumb_url is None:
