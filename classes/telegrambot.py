@@ -125,6 +125,7 @@ class TelegramBot:
         dp.add_handler(CommandHandler("help", self.help))
         dp.add_handler(CommandHandler("restart", restart))
         dp.add_handler(CommandHandler("thumbnail_b1", self.thumbnail_b1))
+        #dp.add_handler(CommandHandler("cancel", self.cancel_download_wizard))
 
         # Add error handler
         dp.add_error_handler(self.error)
@@ -137,8 +138,11 @@ class TelegramBot:
                 self.SET_FILE_NAME: [MessageHandler(Filters.text, self.check_filename, pass_user_data=True)],
                 self.START_DOWNLOAD: [MessageHandler(Filters.text, self.download_confirmation, pass_user_data=False)]
             },
-            fallbacks=[MessageHandler(Filters.regex('^exit$'), self.cancel_download_wizard)]
+            fallbacks=[CommandHandler('cancel', self.cancel_download_wizard),
+                       MessageHandler(Filters.command, self.cancel_download_wizard)],
         )
+
+        # fallbacks=[MessageHandler(Filters.regex('^exit$'), self.cancel_download_wizard)]
 
         thumbnail_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('thumbnail', self.thumbnail)],
@@ -148,8 +152,10 @@ class TelegramBot:
                  self.SET_CATEGORIES: [MessageHandler(Filters.text, self.thumbnail_set_categories, pass_user_data=True)],
                  self.SET_URL: [MessageHandler(Filters.text, self.thumbnail_set_url, pass_user_data=True)]
              },
-            fallbacks=[MessageHandler(Filters.regex('^exit$'), self.cancel_download_wizard)]
+            fallbacks=[CommandHandler('cancel', self.cancel_thumbnail_wizard), MessageHandler(Filters.command, self.cancel_thumbnail_wizard)],
         )
+
+        # fallbacks=[MessageHandler(Filters.regex('^exit$'), self.cancel_download_wizard)]
 
         # Register all the the conversation handler
         dp.add_handler(conversation_handler)
@@ -203,11 +209,11 @@ class TelegramBot:
         if self.CONFIG["noDownloadWizard"]:
             # For fast downloading change automatic filename to true
             self.CONFIG["automaticFilename"] = True
-
+            notifier.notify_information("If you wanna abort the download process just type: '/cancel'")
         else:
             # Start the download wizard
             notifier.notify_information("Oh hello! I'm here to guide you inside the downloading wizard!.\
-                                      PS: you can exit this wizard any time you want, you have just to type 'exit'")
+                                      PS: you can exit this wizard any time you want, you have just to type '/cancel'")
 
         # Go to the first step
         notifier.notify_custom("1️", "Send me a video url")
@@ -360,9 +366,9 @@ class TelegramBot:
                     "We detected that you have already uploaded a video on OpenLoad so you can start build your caption"
                 )
 
-                notifier.notify_success(
+                notifier.notify_warning(
                     "This is a wizard that helps you to generate a nice caption for your thumbnail. "
-                    "You can type 'exit' in any moment to abort the process!"
+                    "You can type '/cancel' in any moment to abort the process!"
                 )
 
                 print("[Thumbnail] User {} has a valid thumbnail URL saved: {}".format(
@@ -536,18 +542,22 @@ class TelegramBot:
         It quits the conversation between the user and the bot and resets the DownloadRequest object.
         """
 
+        notifier = Notifier(update, self.BOT)
+
         # Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute
-        update.message.reply_text("Exited downloading wizard!")
+        notifier.notify_success("Exited downloading wizard!")
+        print("[Download Wizard] User {} aborted download wizard".format(self.get_user_id(update)))
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
+        return ConversationHandler.END
 
     def cancel_thumbnail_wizard(self, update, context):
         notify = Notifier(update, self.BOT)
         url = self.THUMBNAILS[self.get_user_id(update)].URL
         self.THUMBNAILS[self.get_user_id(update)] = Thumbnail(url)
 
-        notify.notify_information("Exited thumbnail wizard, I've cleared all saved data! "
+        notify.notify_information("Exited thumbnail wizard, I've cleared all saved data!"
                                   "If you wanna build again a message you can use '/thumbnail' without any problem")
-
+        print("[Thumbnail Wizard] User {} aborted download wizard".format(self.get_user_id(update)))
         return ConversationHandler.END
 
     def error(self, update, context):

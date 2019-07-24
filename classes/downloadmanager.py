@@ -303,6 +303,7 @@ class DownloadManager:
 
         except PermissionDeniedException as pde:
             self.notifier.notify_error("Permission denied detected while trying to upload data to openload:" + str(pde))
+            print("[DownloadManager] Permission denied detected while uploading video to openload: " + str(pde))
 
     @staticmethod
     def download_image_stream(url: str) -> BytesIO:
