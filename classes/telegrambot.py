@@ -343,7 +343,6 @@ class TelegramBot:
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
 
-    @restricted
     def thumbnail(self, update, context):
         notifier = Notifier(update, self.BOT)
 
