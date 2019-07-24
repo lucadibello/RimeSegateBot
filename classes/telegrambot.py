@@ -12,7 +12,7 @@ from classes.openloadwrapper import OpenloadWrapper
 from classes.urlchecker import UrlChecker
 from classes.thumbnail import Thumbnail
 
-LIST_OF_ADMINS = ["238454100", "68736753"]
+LIST_OF_ADMINS = ["238454100","68736753"]
 
 
 def send_action(action):
@@ -32,10 +32,12 @@ def send_action(action):
 def restricted(func):
     @wraps(func)
     def wrapped(update, context, *args, **kwargs):
-        user_id = update.effective_user.id
+
+        user_id = update.message.chat_id
+
         if str(user_id) not in LIST_OF_ADMINS:
             print("Unauthorized access denied for {}.".format(user_id))
-            context.bot.send_message(chat_id=update.effective_message.chat_id,
+            context.bot.send_message(chat_id=update.message.chat_id,
                                      text="Permission denied, you have to be an admin to use this command")
             return
         return func(update, context, *args, **kwargs)
@@ -177,7 +179,6 @@ class TelegramBot:
 
         update.message.reply_text("Hello my boi. Welcome.")
 
-    @restricted
     @staticmethod
     def help(update, context):
         """
@@ -187,7 +188,6 @@ class TelegramBot:
         # Send to the user all the listed commands with their descriptions
         update.message.reply_text("Just type /download.")
 
-    @restricted
     def download(self, update, context):
         """
         This method handles the '/download' command. It start a conversation (3 steps)
