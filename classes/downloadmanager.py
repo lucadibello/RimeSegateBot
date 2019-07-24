@@ -258,6 +258,10 @@ class DownloadManager:
             print("[OpenLoadWrapper] Video uploaded and returned a response")
             print(response)
             print("Video id: ", response.get("id"))
+
+            # Delete file after download
+            os.remove(file_path)
+
             self.notifier.notify_openload_response(response)
 
             self.notifier.notify_information("Wating OpenLoad to generate a thumbnail...")
