@@ -55,8 +55,6 @@ class TelegramBot:
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
 
-    # Thumbnails (<user_id>: <list_of_thumbnails>)
-    # THUMBNAILS = {238454100: Thumbnail("https://thumb.oloadcdn.net/splash/If7YlOXCS6g/m079Oq-Dmtg.jpg")}
     THUMBNAILS = {68736753: Thumbnail("https://thumb.oloadcdn.net/splash/pZSrxv2Pxgk/vo1AjwKzRmo.jpg")}
 
     def __init__(self, config: dict):
@@ -179,6 +177,7 @@ class TelegramBot:
 
         update.message.reply_text("Hello my boi. Welcome.")
 
+    @restricted
     @staticmethod
     def help(update, context):
         """
@@ -188,6 +187,7 @@ class TelegramBot:
         # Send to the user all the listed commands with their descriptions
         update.message.reply_text("Just type /download.")
 
+    @restricted
     def download(self, update, context):
         """
         This method handles the '/download' command. It start a conversation (3 steps)
@@ -343,6 +343,7 @@ class TelegramBot:
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
 
+    @restricted
     def thumbnail(self, update, context):
         notifier = Notifier(update, self.BOT)
 
@@ -482,6 +483,11 @@ class TelegramBot:
             notifier.notify_information("Generating image with caption...")
             self._build_thumbnail_message(notifier, self.THUMBNAILS[self.get_user_id(update)])
 
+            notifier.notify_success(
+                "Message generated successfully. "
+                "If you don't like it you can type '/thumbnail' again."
+            )
+
             # End conversation
             return ConversationHandler.END
         else:
@@ -505,6 +511,7 @@ class TelegramBot:
             caption=notifier.generate_caption(thumbnail)
         )
 
+    @restricted
     def thumbnail_b1(self, update, context):
         notifier = Notifier(update, self.BOT)
         try:

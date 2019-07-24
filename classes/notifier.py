@@ -1,5 +1,3 @@
-from _ast import Dict
-
 from telegram import ParseMode
 
 
@@ -152,19 +150,30 @@ class Notifier:
                 parse_mode=ParseMode.HTML
             )
 
-    def generate_caption(self, thumbnail):
+    def generate_caption(self, thumbnail, html=False):
         models = ", ".join(thumbnail.MODELS)
         categories = ", ".join(thumbnail.CATEGORIES)
 
-        return "{} Title: {}\n\r" \
-               "{} Model: {}\n\r" \
-               "{} Categories: {}\n\r" \
-               "{} Url: <a href='{}'>Website Url</a>\n\r".format(
-            self.TITLE_EMOJI, thumbnail.TITLE,
-            self.MODEL_EMOJI, models,
-            self.CATEGORY_EMOJI, categories,
-            self.OPENLOAD_URL, thumbnail.VIDEO_URL
-        )
+        if html:
+            return "{} Title: {}\n\r" \
+                   "{} Model: {}\n\r" \
+                   "{} Categories: {}\n\r" \
+                   "{} Url: <a href='{}'>Website Url</a>\n\r".format(
+                self.TITLE_EMOJI, thumbnail.TITLE,
+                self.MODEL_EMOJI, models,
+                self.CATEGORY_EMOJI, categories,
+                self.OPENLOAD_URL, thumbnail.VIDEO_URL
+            )
+        else:
+            return "{} Title: {}\n\r" \
+                   "{} Model: {}\n\r" \
+                   "{} Categories: {}\n\r" \
+                   "{} Url: {}\n\r".format(
+                self.TITLE_EMOJI, thumbnail.TITLE,
+                self.MODEL_EMOJI, models,
+                self.CATEGORY_EMOJI, categories,
+                self.OPENLOAD_URL, thumbnail.VIDEO_URL
+            )
 
     def get_session(self):
         return self.update

@@ -293,7 +293,9 @@ class DownloadManager:
             TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(thumb_url)
 
             self.notifier.notify_success(
-                "I found the thumbnail on OpenLoad.co, to generate a caption use '/thumbnail' command")
+                "I found the thumbnail on OpenLoad.co, to generate a caption use '/thumbnail' command. "
+                "This will start a wizard, just follow the steps!"
+            )
 
         except PermissionDeniedException as pde:
             self.notifier.notify_error("Permission denied detected while trying to upload data to openload:" + str(pde))
