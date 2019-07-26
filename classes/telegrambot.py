@@ -345,7 +345,8 @@ class TelegramBot:
         manager = DownloadManager(
             request,
             notifier=Notifier(session, self.BOT, self.CONFIG["videoTimeout"]),
-            openload=self.OL
+            openload=self.OL,
+            openload_thumbnail=self.CONFIG["openloadThumbnail"],
         )
 
         manager.download_file(
@@ -384,10 +385,16 @@ class TelegramBot:
                     "You can type '/cancel' in any moment to abort the process!"
                 )
 
-                print("[Thumbnail] User {} has a valid thumbnail URL saved: {}".format(
-                    self.get_user_id(update),
-                    thumbnail.URL)
-                )
+                if self.CONFIG["openloadThumbnail"]:
+                    print("[Thumbnail] User {} has a valid thumbnail URL saved: {}".format(
+                        self.get_user_id(update),
+                        thumbnail.URL)
+                    )
+                else:
+                    print("[Thumbnail] User {} has a valid thumbnail data saved: {} bytes".format(
+                        self.get_user_id(update),
+                        len(thumbnail.IMAGE_BYTES))
+                    )
 
                 notifier.notify_information("Select a video name. PS: It can't be only spaces!")
 
@@ -518,7 +525,9 @@ class TelegramBot:
 
             # Send image with caption
             notifier.notify_information("Generating image with caption...")
-            self._build_thumbnail_message(notifier, self.THUMBNAILS[self.get_user_id(update)])
+            self._build_thumbnail_message(notifier,
+                                          self.THUMBNAILS[self.get_user_id(update)],
+                                          bytes=self.CONFIG["openloadThumbnail"])
 
             notifier.notify_success(
                 "Message generated successfully. "
@@ -537,7 +546,7 @@ class TelegramBot:
             return self.SET_URL
 
     @staticmethod
-    def _build_thumbnail_message(notifier: Notifier, thumbnail: Thumbnail):
+    def _build_thumbnail_message(notifier: Notifier, thumbnail: Thumbnail, bytes=False):
         """
         This method is used to generate the caption for the thumbnail using all the data
         saved in the passed Thumbnail object. It will also send the full message (thumbnail + caption) to the user.
@@ -550,10 +559,16 @@ class TelegramBot:
         print("[Thumbnail] Generating message with these values:")
         print(thumbnail.to_dict())
 
-        notifier.send_photo_bytes(
-            DownloadManager.download_image_stream(thumbnail.URL),
-            caption=notifier.generate_caption(thumbnail)
-        )
+        if not bytes:
+            notifier.send_photo_bytes(
+                DownloadManager.download_image_stream(thumbnail.URL),
+                caption=notifier.generate_caption(thumbnail)
+            )
+        else:
+            notifier.send_photo_bytes(
+                thumbnail.IMAGE_BYTES,
+                caption=notifier.generate_caption(thumbnail)
+            )
 
     @restricted
     def thumbnail_b1(self, update, context):

@@ -5,9 +5,16 @@ class Thumbnail:
     URL = ""
     TITLE = ""
     VIDEO_URL = ""
+    IMAGE_BYTES = ""
 
-    def __init__(self, url):
-        self.set_url(url)
+    def __init__(self, data, bytes=False):
+        if not bytes:
+            self.set_url(data)
+        else:
+            self.set_image_bytes(data)
+
+    def set_image_bytes(self, bytes):
+        self.IMAGE_BYTES = bytes
 
     def add_model(self, model: str):
         self.MODELS.append(model)

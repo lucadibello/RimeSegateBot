@@ -7,13 +7,13 @@ from io import BytesIO
 import requests
 import youtube_dl
 from openload.api_exceptions import *
-from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, Filters
 from tqdm import tqdm
 
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
 from classes.telegrambot import TelegramBot
+from classes.previewgenerator import PreviewGenerator
 
 
 class DownloadManager:
@@ -27,7 +27,7 @@ class DownloadManager:
     TOT_DOWNLOADED = 0
 
     # Constructor method. It saves into an attribute the requested resource.
-    def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper):
+    def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper, openload_thumbnail = False):
         """
         Parametrized constructor method.
 
@@ -39,6 +39,7 @@ class DownloadManager:
         self.download_req = download_req
         self.notifier = notifier
         self.OL = openload
+        self.openload_thumbnail = openload_thumbnail
 
         ''' Create progress bar (used with the old download method) '''
         self.bar = None
@@ -259,48 +260,67 @@ class DownloadManager:
             print(response)
             print("Video id: ", response.get("id"))
 
-            # Delete file after download
-            os.remove(file_path)
-
             self.notifier.notify_openload_response(response)
 
-            self.notifier.notify_information("Wating OpenLoad to generate a thumbnail...")
-
-            def get_thumbnail_estimated_generation_size(size: float):
-
-                if size is None:
-                    return None
-                else:
-                    # Latest test: 4% every ~20.28s (File size: 424.46 MB) -> 4.2445 MB/s == 4450680.832 Byte/s
-                    BYTES_ANALYSED_EVERY_20_SEC = 4450681
-                    time = (size / BYTES_ANALYSED_EVERY_20_SEC) * 20
-                    return time
-
-            estimated_time = get_thumbnail_estimated_generation_size(filesize)
-
-            if estimated_time is None:
-                self.notifier.notify_warning("Can't estimate a thumbnail generation time...")
-            else:
-                self.notifier.notify_warning(
-                    "Estimated time for thumbnail generation {} seconds".format(estimated_time))
-
-            # thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
-            thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=60)
-
-            # Checker
-            while thumb_url is None:
-                print("[DownloadManager] Invalid thumbnail (None), retry to get a thumbnail")
-                thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=5)
-
-            print("[DownloadManager] Got a thumbnail url:", thumb_url)
-
             from classes.thumbnail import Thumbnail
-            TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(thumb_url)
 
-            self.notifier.notify_success(
-                "I found the thumbnail on OpenLoad.co, to generate a caption use '/thumbnail' command. "
-                "This will start a wizard, just follow the steps!"
-            )
+            if self.openload_thumbnail:
+                # Get thumbnail from OpenLoad
+                self.notifier.notify_information("Wating OpenLoad to generate a thumbnail...")
+
+                def get_thumbnail_estimated_generation_size(size: float):
+
+                    if size is None:
+                        return None
+                    else:
+                        # Latest test: 4% every ~20.28s (File size: 424.46 MB) -> 4.2445 MB/s == 4450680.832 Byte/s
+                        BYTES_ANALYSED_EVERY_20_SEC = 4450681
+                        time = (size / BYTES_ANALYSED_EVERY_20_SEC) * 20
+                        return time
+
+                estimated_time = get_thumbnail_estimated_generation_size(filesize)
+
+                if estimated_time is None:
+                    self.notifier.notify_warning("Can't estimate a thumbnail generation time...")
+                else:
+                    self.notifier.notify_warning(
+                        "Estimated time for thumbnail generation {} seconds".format(estimated_time))
+
+                # thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=estimated_time)
+                thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=60)
+
+                # Checker
+                while thumb_url is None:
+                    print("[DownloadManager] Invalid thumbnail (None), retry to get a thumbnail")
+                    thumb_url = self.OL.get_thumbnail_when_ready(response.get("id"), delay=5)
+
+                print("[DownloadManager] Got a thumbnail url:", thumb_url)
+
+                TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(thumb_url)
+
+                self.notifier.notify_success(
+                    "I found the thumbnail on OpenLoad.co, to generate a caption use '/thumbnail' command. "
+                    "This will start a wizard, just follow the steps!"
+                )
+            else:
+                # Generate thumbnail using downloaded video
+                print("[DownloadManager] Generating thumbnail using video: {}".format(file_path))
+                generator = PreviewGenerator()
+                response = generator.generate_preview(file_path, "thumbnails")
+
+                if not response:
+                    self.notifier.notify_error("Error while generating thumbnail...")
+                else:
+                    data = open(response["path"], 'rb')
+                    TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(data, bytes=True)
+
+                    self.notifier.notify_success(
+                        "I've generated a preview in {} seconds. to generate a caption use '/thumbnail' "
+                        "command.This will start a wizard, just follow the steps!".format(response["time"])
+                    )
+
+            # Delete file after download
+            os.remove(file_path)
 
         except PermissionDeniedException as pde:
             self.notifier.notify_error("Permission denied detected while trying to upload data to openload:" + str(pde))
