@@ -12,8 +12,7 @@ from classes.openloadwrapper import OpenloadWrapper
 from classes.urlchecker import UrlChecker
 from classes.thumbnail import Thumbnail
 
-LIST_OF_ADMINS = ["238454100","68736753"]
-
+LIST_OF_ADMINS = [238454100, 68736753]
 
 def send_action(action):
     """Sends `action` while processing func command."""
@@ -56,6 +55,8 @@ class TelegramBot:
     """
     This telegram bot is able to download media (images and videos) from an url.
     """
+
+    global LIST_OF_ADMINS
 
     # ConversationHandler steps
     SET_DOWNLOAD_URL, SET_FILE_NAME, START_DOWNLOAD = range(3)
@@ -118,7 +119,6 @@ class TelegramBot:
             # Replaces the old process with a new one
             os.execl(sys.executable, sys.executable, *sys.argv)
 
-        @restricted
         def restart(update, context):
             """
             This method handles the '/restart' command and use the '@restricted' wrapper to check if the user
@@ -131,18 +131,17 @@ class TelegramBot:
             Thread(target=stop_and_restart).start()
 
         # Register commands
-        dp.add_handler(CommandHandler("start", self.start))
-        dp.add_handler(CommandHandler("help", self.help))
-        dp.add_handler(CommandHandler("restart", restart))
-        dp.add_handler(CommandHandler("thumbnail_b1", self.thumbnail_b1))
-        #dp.add_handler(CommandHandler("cancel", self.cancel_download_wizard))
+        dp.add_handler(CommandHandler("start", self.start, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+        dp.add_handler(CommandHandler("help", self.help, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+        dp.add_handler(CommandHandler("restart", restart, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+        # dp.add_handler(CommandHandler("thumbnail_b1", self.thumbnail_b1, filters=Filters.user(user_id=LIST_OF_ADMINS)))
 
         # Add error handler
         dp.add_error_handler(self.error)
 
         # Conversation handler for the download request
         conversation_handler = ConversationHandler(
-            entry_points=[CommandHandler('download', self.download)],
+            entry_points=[CommandHandler('download', self.download, filters=Filters.user(user_id=LIST_OF_ADMINS))],
             states={
                 self.SET_DOWNLOAD_URL: [MessageHandler(Filters.text, self.check_download_url, pass_user_data=True)],
                 self.SET_FILE_NAME: [MessageHandler(Filters.text, self.check_filename, pass_user_data=True)],
@@ -154,7 +153,7 @@ class TelegramBot:
 
         # ConversationHandler for thumbnail command.
         thumbnail_conversation_handler = ConversationHandler(
-            entry_points=[CommandHandler('thumbnail', self.thumbnail)],
+            entry_points=[CommandHandler('thumbnail', self.thumbnail, filters=Filters.user(user_id=LIST_OF_ADMINS))],
             states={
                  self.SET_VIDEO_NAME: [MessageHandler(Filters.text, self.thumbnail_set_video_name, pass_user_data=True)],
                  self.SET_MODEL: [MessageHandler(Filters.text, self.thumbnail_set_model, pass_user_data=True)],
@@ -163,7 +162,6 @@ class TelegramBot:
              },
             fallbacks=[CommandHandler('cancel', self.cancel_thumbnail_wizard), MessageHandler(Filters.command, self.cancel_thumbnail_wizard)],
         )
-
 
         # Register all the the conversation handler
         dp.add_handler(conversation_handler)
@@ -579,7 +577,6 @@ class TelegramBot:
                 caption=notifier.generate_caption(thumbnail)
             )
 
-    @restricted
     def thumbnail_b1(self, update, context):
         """
         WARNING: FOR TESTING ONLY
