@@ -1,6 +1,6 @@
 # RimeSegate's Telegram Bot
-This telegram bot is able to download videos from over 800 websites thanks to ![Youtube-dl]("https://github.com/ytdl-org/youtube-dl"). All the downloaded videos are uploaded autonomously to ![OpenLoad.co]("https://openload.co/").
-After the upload process it will generate a video preview using 9 frames of the downloaded video with ![OpenCV]("https://opencv.org/").
+This telegram bot is able to download videos from over 800 websites thanks to [Youtube-dl]("https://github.com/ytdl-org/youtube-dl"). All the downloaded videos are uploaded autonomously to [OpenLoad.co]("https://openload.co/").
+After the upload process it will generate a video preview using 9 frames of the downloaded video with [OpenCV]("https://opencv.org/").
 
 ## Features
 
@@ -11,7 +11,7 @@ After the upload process it will generate a video preview using 9 frames of the 
 - Video converter (to MP4)
 - and much more!
 
-## Requirements
+## Setup
 ```shell
 pip3 install -r requirements.txt 
 ```
