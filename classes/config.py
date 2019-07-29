@@ -48,5 +48,7 @@ class Config:
         """
         Returns all the settings saved in the config file.
         """
-
-        return self._read_json()
+        try:
+            return self._read_json()
+        except json.decoder.JSONDecodeError:
+            print("[Config] Error detected while parsing data, check your config.json file.")
