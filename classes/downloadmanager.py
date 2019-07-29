@@ -311,12 +311,17 @@ class DownloadManager:
                 if not response:
                     self.notifier.notify_error("Error while generating thumbnail...")
                 else:
-                    data = open(response["path"], 'rb')
-                    TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(data, bytes=True)
+                    with open(response["path"], 'rb') as thumbnail_image:
+                        data = thumbnail_image.read()
+
+                    TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(
+                        data,
+                        bytes=True
+                    )
 
                     self.notifier.notify_success(
                         "I've generated a preview in {} seconds. to generate a caption use '/thumbnail' "
-                        "command.This will start a wizard, just follow the steps!".format(response["time"])
+                        "command.This will start a wizard, just follow the steps!".format(response["seconds"])
                     )
 
             # Delete file after download
