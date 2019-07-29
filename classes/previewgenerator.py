@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 import datetime
 import os
 
@@ -39,7 +38,8 @@ class PreviewGenerator:
         h3 = cv2.hconcat(images[6:9])
 
         # Concat 3 full images
-        full_preview = np.concatenate((h1, h2, h3), axis=0)
+        #full_preview = np.concatenate((h1, h2, h3), axis=0)
+        full_preview = cv2.vconcat([h1, h2, h3])
 
         print("[PreviewGenerator] Preview generated")
 
@@ -56,10 +56,9 @@ class PreviewGenerator:
     @staticmethod
     def _save_img(image, save_path):
         print("[PreviewGenerator] Saving preview in: {}".format(save_path))
-        from PIL import Image
 
         current_time = datetime.datetime.now()
-        filename = current_time.strftime("%m%d%Y-%H%M%S")
+        filename = current_time.strftime("%m%d%Y-%H%M%S.jpg")
 
         # Generate directory if not exists
         if not os.path.exists(save_path):
@@ -67,7 +66,6 @@ class PreviewGenerator:
 
         full_path = os.path.join(save_path, filename)
 
-        # TODO: Error while saving thumbnail
         cv2.imwrite(full_path, image)
         print("[PreviewGenerator] Image saved")
 
