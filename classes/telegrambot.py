@@ -513,9 +513,15 @@ class TelegramBot:
         # Get last message sent by the user
         url = update.message.text.strip()
 
-        if checker.full_check(url):
+        if checker.check_format(url):
             # Url valid (well-formatted & reachable)
-            notifier.notify_success("The URL is well-formatted and reachable via HTTP GET requests.")
+            notifier.notify_success("The URL is well-formatted.")
+
+            if checker.check_exists(url):
+                notifier.notify_success("The link is also reachable via HTTP GET requests")
+            else:
+                notifier.notify_warning("The link is not reachable or its response is not valid")
+
             self.THUMBNAILS[self.get_user_id(update)].set_video_url(url)
 
             print("[Thumbnail] User {} selected a url for the caption: {}".format(
