@@ -311,12 +311,11 @@ class DownloadManager:
                 if not response:
                     self.notifier.notify_error("Error while generating thumbnail...")
                 else:
-                    with open(response["path"], 'rb') as thumbnail_image:
-                        data = thumbnail_image.read()
+                    print("File path", response['path'])
 
                     TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(
-                        data,
-                        bytes=True
+                        response["path"],
+                        local=True
                     )
 
                     self.notifier.notify_success(

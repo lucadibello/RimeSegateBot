@@ -66,7 +66,8 @@ class TelegramBot:
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
 
-    THUMBNAILS = {68736753: Thumbnail("https://thumb.oloadcdn.net/splash/pZSrxv2Pxgk/vo1AjwKzRmo.jpg")}
+    # Thumbnails (<user_id>: <thumbnail_obj>)
+    THUMBNAILS = {}
 
     def __init__(self, config: dict):
         """
@@ -391,9 +392,9 @@ class TelegramBot:
                         thumbnail.URL)
                     )
                 else:
-                    print("[Thumbnail] User {} has a valid thumbnail data saved: {} bytes".format(
+                    print("[Thumbnail] User {} has a valid thumbnail data saved in '{}'".format(
                         self.get_user_id(update),
-                        len(thumbnail.IMAGE_BYTES))
+                        len(thumbnail.IMAGE_LOCAL_PATH))
                     )
 
                 notifier.notify_information("Select a video name. PS: It can't be only spaces!")
@@ -531,9 +532,11 @@ class TelegramBot:
 
             # Send image with caption
             notifier.notify_information("Generating image with caption...")
-            self._build_thumbnail_message(notifier,
-                                          self.THUMBNAILS[self.get_user_id(update)],
-                                          bytes=self.CONFIG["openloadThumbnail"])
+            self._build_thumbnail_message(
+                notifier,
+                self.THUMBNAILS[self.get_user_id(update)],
+                online=self.CONFIG["openloadThumbnail"]
+            )
 
             notifier.notify_success(
                 "Message generated successfully. "
@@ -548,11 +551,11 @@ class TelegramBot:
                 "The url is not well-formatted or is not reachable via HTTP GET requests... Check the URL and try again"
             )
 
-            # Restart to 'set URL'
+            # Restart to 'set URL' step
             return self.SET_URL
 
     @staticmethod
-    def _build_thumbnail_message(notifier: Notifier, thumbnail: Thumbnail, bytes=False):
+    def _build_thumbnail_message(notifier: Notifier, thumbnail: Thumbnail, online=False):
         """
         This method is used to generate the caption for the thumbnail using all the data
         saved in the passed Thumbnail object. It will also send the full message (thumbnail + caption) to the user.
@@ -565,14 +568,14 @@ class TelegramBot:
         print("[Thumbnail] Generating message with these values:")
         print(thumbnail.to_dict())
 
-        if not bytes:
+        if online:
             notifier.send_photo_bytes(
                 DownloadManager.download_image_stream(thumbnail.URL),
                 caption=notifier.generate_caption(thumbnail)
             )
         else:
             notifier.send_photo_bytes(
-                thumbnail.IMAGE_BYTES,
+                open(thumbnail.IMAGE_LOCAL_PATH, 'rb'),
                 caption=notifier.generate_caption(thumbnail)
             )
 
@@ -622,8 +625,13 @@ class TelegramBot:
         """
 
         notify = Notifier(update, self.BOT)
-        url = self.THUMBNAILS[self.get_user_id(update)].URL
-        self.THUMBNAILS[self.get_user_id(update)] = Thumbnail(url)
+
+        if self.CONFIG["openloadThumbnail"]:
+            url = self.THUMBNAILS[self.get_user_id(update)].URL
+            self.THUMBNAILS[self.get_user_id(update)] = Thumbnail(url)
+        else:
+            path = self.THUMBNAILS[self.get_user_id(update)].IMAGE_LOCAL_PATH
+            self.THUMBNAILS[self.get_user_id(update)] = Thumbnail(path, local=True)
 
         notify.notify_success("Exited thumbnail wizard, I've cleared all saved data!"
                                   "If you wanna build again a message you can use '/thumbnail' without any problem")

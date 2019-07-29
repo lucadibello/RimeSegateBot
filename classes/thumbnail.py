@@ -5,16 +5,16 @@ class Thumbnail:
     URL = ""
     TITLE = ""
     VIDEO_URL = ""
-    IMAGE_BYTES = ""
+    IMAGE_LOCAL_PATH = ""
 
-    def __init__(self, data, bytes=False):
-        if not bytes:
+    def __init__(self, data, local=False):
+        if not local:
             self.set_url(data)
         else:
-            self.set_image_bytes(data)
+            self.set_image_local_path(data)
 
-    def set_image_bytes(self, bytes):
-        self.IMAGE_BYTES = bytes
+    def set_image_local_path(self, path):
+        self.IMAGE_LOCAL_PATH = path
 
     def add_model(self, model: str):
         self.MODELS.append(model)
