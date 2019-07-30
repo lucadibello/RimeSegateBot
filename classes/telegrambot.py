@@ -363,9 +363,6 @@ class TelegramBot:
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
 
-        import threading
-        threading.current_thread().join()
-
     def thumbnail(self, update, context):
         """
         This method handles the '/thumbnail' command. It start a conversation (4 steps)
