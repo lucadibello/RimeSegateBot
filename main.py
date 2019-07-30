@@ -90,6 +90,9 @@ def create_default_file(file_path):
     data = requests.get(default_config_url).text
     print("[Config] Downloaded from server default config file")
 
+    if not os.path.exists("config"):
+        os.makedirs('config')
+
     with open(file_path, 'w+') as f:
         print("[Config] Writing downloaded data to {} path".format(file_path))
         f.write(data)

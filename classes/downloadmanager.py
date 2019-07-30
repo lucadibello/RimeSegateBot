@@ -144,7 +144,7 @@ class DownloadManager:
                     args=(save_path, self.download_req, automatic_filename, convert_to_mp4,)
                 )
 
-                download_process.daemon = True
+                # download_process.daemon = True
                 download_process.start()
 
                 print("[DownloadManager] Download started in another thread: {}".format(download_process))
@@ -342,21 +342,29 @@ class DownloadManager:
                 # Generate thumbnail using downloaded video
                 print("[DownloadManager] Generating thumbnail using video: {}".format(file_path))
                 generator = PreviewGenerator()
-                response = generator.generate_preview(file_path, "thumbnails")
+                import cv2
 
-                if not response:
-                    self.notifier.notify_error("Error while generating thumbnail...")
-                else:
-                    print("File path", response['path'])
+                try:
+                    response = generator.generate_preview(file_path, "thumbnails")
 
-                    TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(
-                        response["path"],
-                        local=True
-                    )
+                    if not response:
+                        self.notifier.notify_error("Error while generating thumbnail...")
+                    else:
+                        print("File path", response['path'])
 
-                    self.notifier.notify_success(
-                        "I've generated a preview in {} seconds. to generate a caption use '/thumbnail' "
-                        "command.This will start a wizard, just follow the steps!".format(response["seconds"])
+                        TelegramBot.THUMBNAILS[TelegramBot.get_user_id(self.notifier.get_session())] = Thumbnail(
+                            response["path"],
+                            local=True
+                        )
+
+                        self.notifier.notify_success(
+                            "I've generated a preview in {} seconds. to generate a caption use '/thumbnail' "
+                            "command.This will start a wizard, just follow the steps!".format(response["seconds"])
+                        )
+                except cv2.error as ex:
+                    print("[DownloadManager] Can't generate a preview.. Error message:", str(ex))
+                    self.notifier.notify_error(
+                        "OpenCV cannot generate a proper thumbnail with this video... Ask the developer"
                     )
 
             # Delete file after download

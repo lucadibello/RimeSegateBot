@@ -253,6 +253,7 @@ class TelegramBot:
 
             if self.CONFIG["noDownloadWizard"]:
                 print("[NoWizard] Skip to downloading")
+
                 # Download file
                 self._download_file(self.DOWNLOAD_REQUEST, update)
 
@@ -321,15 +322,14 @@ class TelegramBot:
             # Download file
             self._download_file(self.DOWNLOAD_REQUEST, update)
 
-            # End conversation
             return ConversationHandler.END
-
         elif msg == "n" or msg == "no":
             # Abort download wizard
             update.message.reply_text("Download wizard aborted..")
 
             # Reset download request
-            self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
+            #self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
+            self.cancel_download_wizard(update, context)
 
             # End conversation
             return ConversationHandler.END
@@ -362,6 +362,8 @@ class TelegramBot:
             new_download_method=self.CONFIG["newDownloadMethod"],
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
+
+        raise Exception("I don't know why I have to do this..")
 
     def thumbnail(self, update, context):
         """

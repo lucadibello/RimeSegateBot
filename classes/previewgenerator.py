@@ -14,23 +14,11 @@ class PreviewGenerator:
 
         # Get total frames
         tot_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        print("Total frames:", tot_frames)
+        print("[PreviewGenerator] Total frames:", tot_frames)
 
         # Get 9 frames in the video
         num_images = 9
         images = [self._get_frame(cap, i * int(tot_frames / num_images)) for i in range(num_images)]
-
-        for i in images:
-            print(type(i))
-
-        '''
-        images = []
-        for i in range(num_images):
-            #print(type(self._get_frame(cap, i * int(tot_frames / num_images+1))))
-            import random as rnd
-            print(type(self._get_frame(cap, rnd.randint(0, tot_frames))))
-            exit()
-        '''
 
         # Create 3 horizontal images
         h1 = cv2.hconcat(images[0:3])
@@ -38,7 +26,7 @@ class PreviewGenerator:
         h3 = cv2.hconcat(images[6:9])
 
         # Concat 3 full images
-        #full_preview = np.concatenate((h1, h2, h3), axis=0)
+        # full_preview = np.concatenate((h1, h2, h3), axis=0)
         full_preview = cv2.vconcat([h1, h2, h3])
 
         print("[PreviewGenerator] Preview generated")
