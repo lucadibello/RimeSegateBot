@@ -150,8 +150,7 @@ class TelegramBot:
                 self.SET_FILE_NAME: [MessageHandler(Filters.text, self.check_filename, pass_user_data=True)],
                 self.START_DOWNLOAD: [MessageHandler(Filters.text, self.download_confirmation, pass_user_data=False)]
             },
-            fallbacks=[CommandHandler('cancel', self.cancel_download_wizard),
-                       MessageHandler(Filters.command, self.cancel_download_wizard)],
+            fallbacks=[CommandHandler('cancel', self.cancel_download_wizard)],
         )
 
         # ConversationHandler for thumbnail command.
@@ -163,7 +162,7 @@ class TelegramBot:
                  self.SET_CATEGORIES: [MessageHandler(Filters.text, self.thumbnail_set_categories, pass_user_data=True)],
                  self.SET_URL: [MessageHandler(Filters.text, self.thumbnail_set_url, pass_user_data=True)]
              },
-            fallbacks=[CommandHandler('cancel', self.cancel_thumbnail_wizard), MessageHandler(Filters.command, self.cancel_thumbnail_wizard)],
+            fallbacks=[CommandHandler('cancel', self.cancel_thumbnail_wizard)],
         )
 
         # Register all the the conversation handler
@@ -215,19 +214,24 @@ class TelegramBot:
         # Create unique notifier for this user (every update -> different notifier)
         notifier = Notifier(update, self.BOT)
 
-        if self.CONFIG["noDownloadWizard"]:
-            # For fast downloading change automatic filename to true
-            self.CONFIG["automaticFilename"] = True
-            notifier.notify_information("If you wanna abort the download process just type: '/cancel'")
+        if not self.get_user_id(update) in self.DOWNLOAD_PROCESSES:
+
+            if self.CONFIG["noDownloadWizard"]:
+                # For fast downloading change automatic filename to true
+                self.CONFIG["automaticFilename"] = True
+                notifier.notify_information("If you wanna abort the download process just type: '/cancel'")
+            else:
+                # Start the download wizard
+                notifier.notify_information("Oh hello! I'm here to guide you inside the downloading wizard!.\
+                                          PS: you can exit this wizard any time you want, you have just to type '/cancel'")
+
+            # Go to the first step
+            notifier.notify_custom("1️", "Send me a video url")
+
+            return self.SET_DOWNLOAD_URL
         else:
-            # Start the download wizard
-            notifier.notify_information("Oh hello! I'm here to guide you inside the downloading wizard!.\
-                                      PS: you can exit this wizard any time you want, you have just to type '/cancel'")
-
-        # Go to the first step
-        notifier.notify_custom("1️", "Send me a video url")
-
-        return self.SET_DOWNLOAD_URL
+            notifier.notify_error("You are downloading already a resource."
+                                  "Multiple download are currently disabled. Ask the developer for extra information.")
 
     def check_download_url(self, update, context):
         """
@@ -358,10 +362,6 @@ class TelegramBot:
             new_download_method=self.CONFIG["newDownloadMethod"],
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
-
-        from multiprocessing import Process
-        waiter = Process()
-        waiter.join()
 
     def thumbnail(self, update, context):
         """
@@ -618,19 +618,36 @@ class TelegramBot:
 
         # Exit the download wizard and reset the 'DOWNLOAD_REQUEST' attribute
         notifier.notify_success("Exited downloading wizard!")
-        print("[Download Wizard] User {} aborted download wizard".format(self.get_user_id(update)))
+        print("[Download cancel] User {} aborted download wizard".format(self.get_user_id(update)))
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
 
         if self.get_user_id(update) in self.DOWNLOAD_PROCESSES:
+            print("[Download cancel] Found download thread")
 
             # Stop download process
             self.DOWNLOAD_PROCESSES[self.get_user_id(update)].terminate()
+            print("[Download cancel] Download thread killed")
+
+            # Remove index from dictionary
+            del self.DOWNLOAD_PROCESSES[self.get_user_id(update)]
+
+            # Wait some seconds to let the process kill properly...
+            sleep_time = 2
+            import time
+
+            print("[Download cancel] Removing all the data in {} folder in {} seconds..".format(
+                self.CONFIG["saveFolder"],
+                sleep_time)
+            )
+
+            time.sleep(sleep_time)
 
             # Delete all video parts (so only files) in download folder
             for the_file in os.listdir(self.CONFIG["saveFolder"]):
                 file_path = os.path.join(self.CONFIG["saveFolder"], the_file)
                 try:
                     if os.path.isfile(file_path):
+                        print("[Download cancel] Found {}, i'm deleting it..".format(file_path))
                         os.unlink(file_path)
                 except Exception as e:
                     print(e)
@@ -653,7 +670,8 @@ class TelegramBot:
             self.THUMBNAILS[self.get_user_id(update)] = Thumbnail(path, local=True)
 
         notify.notify_success("Exited thumbnail wizard, I've cleared all saved data!"
-                                  "If you wanna build again a message you can use '/thumbnail' without any problem")
+                              "If you wanna build again a message you can use '/thumbnail' without any problem")
+
         print("[Thumbnail Wizard] User {} aborted download wizard".format(self.get_user_id(update)))
         return ConversationHandler.END
 

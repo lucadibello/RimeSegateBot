@@ -9,6 +9,8 @@ import youtube_dl
 from openload.api_exceptions import *
 from tqdm import tqdm
 from multiprocessing import Process
+#from threading import Thread
+import kthread
 
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
@@ -125,7 +127,9 @@ class DownloadManager:
                 <a href='https://ytdl-org.github.io/youtube-dl/supportedsites.html'>view the full list </a>.")
 
                 # TODO: Start download in another process
-                print("[DownloadManager] Starting download in another process")
+                print("[DownloadManager] Starting download in another thread")
+
+                """
                 download_process = Process(
                     target=self._download,
                     args=(save_path, self.download_req, automatic_filename, convert_to_mp4,)
@@ -133,7 +137,17 @@ class DownloadManager:
 
                 # Start process
                 download_process.start()
-                print("[DownloadManager] Download started in another process")
+                """
+
+                download_process = kthread.KThread(
+                    target=self._download,
+                    args=(save_path, self.download_req, automatic_filename, convert_to_mp4,)
+                )
+
+                download_process.daemon = True
+                download_process.start()
+
+                print("[DownloadManager] Download started in another thread: {}".format(download_process))
 
                 # Add process to the list of processes
                 TelegramBot.DOWNLOAD_PROCESSES[TelegramBot.get_user_id(self.notifier.get_session())] = download_process
@@ -214,6 +228,9 @@ class DownloadManager:
         except youtube_dl.utils.DownloadError as err:
             print("[Youtube-DL] Error detected: " + err.exc_info)
 
+        # Remove index from download process
+        del TelegramBot.DOWNLOAD_PROCESSES[TelegramBot.get_user_id(self.notifier.get_session())]
+
     def download_hook(self, d):
         """
         Download hook for the new download method (Youtube-DL)
@@ -260,7 +277,6 @@ class DownloadManager:
             # Notify user every 10% step
             self.notifier.notify_information("Current download percentage: " + percentage)
 
-    #
     def _handle_download_finished(self, file_path: str, filesize: float):
         """
         This method handles all the post-download process, so upload on OpenLoad the downloaded video
