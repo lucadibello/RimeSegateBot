@@ -4,3 +4,4 @@ pyopenload==0.7
 tqdm==4.32.2
 opencv-python==4.1.0.25
 youtube_dl==2019.7.27
+kthread==0.2.2
