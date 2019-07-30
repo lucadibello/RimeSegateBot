@@ -70,6 +70,9 @@ class TelegramBot:
     # Thumbnails (<user_id>: <thumbnail_obj>)
     THUMBNAILS = {}
 
+    # Download processes (<user_id>: <download_process>)
+    DOWNLOAD_PROCESSES = {}
+
     def __init__(self, config: dict):
         """
         Parametrized constructor method.
@@ -356,6 +359,10 @@ class TelegramBot:
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
 
+        from multiprocessing import Process
+        waiter = Process()
+        waiter.join()
+
     def thumbnail(self, update, context):
         """
         This method handles the '/thumbnail' command. It start a conversation (4 steps)
@@ -613,6 +620,21 @@ class TelegramBot:
         notifier.notify_success("Exited downloading wizard!")
         print("[Download Wizard] User {} aborted download wizard".format(self.get_user_id(update)))
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
+
+        if self.get_user_id(update) in self.DOWNLOAD_PROCESSES:
+
+            # Stop download process
+            self.DOWNLOAD_PROCESSES[self.get_user_id(update)].terminate()
+
+            # Delete all video parts (so only files) in download folder
+            for the_file in os.listdir(self.CONFIG["saveFolder"]):
+                file_path = os.path.join(self.CONFIG["saveFolder"], the_file)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                except Exception as e:
+                    print(e)
+
         return ConversationHandler.END
 
     def cancel_thumbnail_wizard(self, update, context):

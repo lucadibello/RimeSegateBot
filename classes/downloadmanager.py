@@ -8,6 +8,7 @@ import requests
 import youtube_dl
 from openload.api_exceptions import *
 from tqdm import tqdm
+from multiprocessing import Process
 
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
@@ -114,16 +115,30 @@ class DownloadManager:
                 # Uploads the video on OpenLoad
                 self._handle_download_finished(full_path, self.TOT_DOWNLOADED)
 
+                print("[Downloader] File named {} saved correctly".format(full_path))
+                self.notifier.notify_success("File downloaded and uploaded correctly!.")
+
             else:
                 self.notifier.notify_information("Starting download")
                 self.notifier.notify_information("\
                 You are using the new download system witch supports a lot of websites,\
                 <a href='https://ytdl-org.github.io/youtube-dl/supportedsites.html'>view the full list </a>.")
 
-                self._download(save_path, self.download_req, automatic_filename, convert_to_mp4=convert_to_mp4)
+                # TODO: Start download in another process
+                print("[DownloadManager] Starting download in another process")
+                download_process = Process(
+                    target=self._download,
+                    args=(save_path, self.download_req, automatic_filename, convert_to_mp4,)
+                )
 
-            print("[Downloader] File named {} saved correctly".format(full_path))
-            self.notifier.notify_success("File downloaded and uploaded correctly!.")
+                # Start process
+                download_process.start()
+                print("[DownloadManager] Download started in another process")
+
+                # Add process to the list of processes
+                TelegramBot.DOWNLOAD_PROCESSES[TelegramBot.get_user_id(self.notifier.get_session())] = download_process
+
+                #self._download(save_path, self.download_req, automatic_filename, convert_to_mp4=convert_to_mp4)
 
             return True
 
@@ -162,7 +177,8 @@ class DownloadManager:
             filename = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
 
             # Add output format
-            ydl_opts.update({'outtmpl': save_path + "/" + filename + ".%(ext)s"})
+            full_path = os.path.join(save_path, filename)
+            ydl_opts.update({'outtmpl': full_path + ".%(ext)s"})
 
         else:
             self.notifier.notify_warning("\
@@ -170,7 +186,8 @@ class DownloadManager:
              another already saved, it will overwrite the saved one. Use at your own risk!")
 
             # Add output format
-            ydl_opts.update({'outtmpl': save_path + "/" + download_request.filename + ".%(ext)s"})
+            full_path = os.path.join(save_path, download_request.filename)
+            ydl_opts.update({'outtmpl': full_path + ".%(ext)s"})
 
         if convert_to_mp4:
             self.notifier.notify_error(
@@ -190,6 +207,9 @@ class DownloadManager:
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([download_request.url])
+
+                print("[Downloader] File named {} saved correctly".format(full_path))
+                self.notifier.notify_success("File downloaded correctly with Youtube-DL!.")
 
         except youtube_dl.utils.DownloadError as err:
             print("[Youtube-DL] Error detected: " + err.exc_info)
