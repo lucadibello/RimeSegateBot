@@ -8,8 +8,6 @@ import requests
 import youtube_dl
 from openload.api_exceptions import *
 from tqdm import tqdm
-from multiprocessing import Process
-#from threading import Thread
 import kthread
 
 from classes.downloadrequest import DownloadRequest
@@ -28,6 +26,9 @@ class DownloadManager:
 
     # Saves all the bytes downloaded bytes for the old download method hook
     TOT_DOWNLOADED = 0
+
+    # True when the download has finished
+    DOWNLOAD_FINISHED = False
 
     # Constructor method. It saves into an attribute the requested resource.
     def __init__(self, download_req: DownloadRequest, notifier: Notifier, openload: OpenloadWrapper, openload_thumbnail = False):
@@ -78,9 +79,7 @@ class DownloadManager:
         """
 
         try:
-            full_path = ""
             if not new_download_method:
-
                 self.notifier.notify_warning(
                     "You are using the old download method, this method does\
                     support only few sites and less options.\
@@ -117,6 +116,8 @@ class DownloadManager:
                 # Uploads the video on OpenLoad
                 self._handle_download_finished(full_path, self.TOT_DOWNLOADED)
 
+                self.DOWNLOAD_FINISHED = True
+
                 print("[Downloader] File named {} saved correctly".format(full_path))
                 self.notifier.notify_success("File downloaded and uploaded correctly!.")
 
@@ -128,16 +129,6 @@ class DownloadManager:
 
                 # TODO: Start download in another process
                 print("[DownloadManager] Starting download in another thread")
-
-                """
-                download_process = Process(
-                    target=self._download,
-                    args=(save_path, self.download_req, automatic_filename, convert_to_mp4,)
-                )
-
-                # Start process
-                download_process.start()
-                """
 
                 download_process = kthread.KThread(
                     target=self._download,
@@ -154,6 +145,7 @@ class DownloadManager:
 
                 #self._download(save_path, self.download_req, automatic_filename, convert_to_mp4=convert_to_mp4)
 
+            # self.wait_download_to_finish()
             return True
 
         except FileNotFoundException as f:
@@ -222,6 +214,7 @@ class DownloadManager:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([download_request.url])
 
+                self.DOWNLOAD_FINISHED = True
                 print("[Downloader] File named {} saved correctly".format(full_path))
                 self.notifier.notify_success("File downloaded correctly with Youtube-DL!.")
 

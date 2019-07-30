@@ -67,6 +67,9 @@ class TelegramBot:
     # Conversation texts
     DOWNLOAD_CONFIRMATION = "You want to start downloading this file? (y/n)"
 
+    # User status (<user_id>: <thumbnail_obj>)
+    USERS_STATUS = {}
+
     # Thumbnails (<user_id>: <thumbnail_obj>)
     THUMBNAILS = {}
 
@@ -137,6 +140,7 @@ class TelegramBot:
         dp.add_handler(CommandHandler("start", self.start, filters=Filters.user(user_id=LIST_OF_ADMINS)))
         dp.add_handler(CommandHandler("help", self.help, filters=Filters.user(user_id=LIST_OF_ADMINS)))
         dp.add_handler(CommandHandler("restart", restart, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+        dp.add_handler(CommandHandler("stop", self.stop, filters=Filters.user(user_id=LIST_OF_ADMINS)))
         # dp.add_handler(CommandHandler("thumbnail_b1", self.thumbnail_b1, filters=Filters.user(user_id=LIST_OF_ADMINS)))
 
         # Add error handler
@@ -201,6 +205,50 @@ class TelegramBot:
 
         # Send to the user all the listed commands with their descriptions
         update.message.reply_text("Just type /download.")
+
+    def stop(self, update, context):
+        """
+        This method handles the '/stop' command. It stops the download process!
+        """
+        print("[Bot] Received cancel command from", self.get_user_id(update))
+        notifier = Notifier(update, self.BOT)
+
+        if self.get_user_id(update) in self.DOWNLOAD_PROCESSES:
+            print("[Download cancel] Found download thread")
+
+            # Stop download process
+            self.DOWNLOAD_PROCESSES[self.get_user_id(update)].terminate()
+            print("[Download cancel] Download thread killed")
+
+            # Remove index from dictionary
+            del self.DOWNLOAD_PROCESSES[self.get_user_id(update)]
+
+            # Wait some seconds to let the process kill properly...
+            sleep_time = 2
+            import time
+
+            print("[Download cancel] Removing all the data in {} folder in {} seconds..".format(
+                self.CONFIG["saveFolder"],
+                sleep_time)
+            )
+
+            time.sleep(sleep_time)
+
+            # Delete all video parts (so only files) in download folder
+            for the_file in os.listdir(self.CONFIG["saveFolder"]):
+                file_path = os.path.join(self.CONFIG["saveFolder"], the_file)
+                try:
+                    if os.path.isfile(file_path):
+                        print("[Download cancel] Found {}, i'm deleting it..".format(file_path))
+                        os.unlink(file_path)
+                except Exception as e:
+                    print(e)
+
+            notifier.notify_success("I stopped the download process successfully!")
+        else:
+            notifier.notify_warning(
+                "You are not downloading any content now. You can use this command only to stop a download."
+            )
 
     def download(self, update, context):
         """
@@ -323,6 +371,7 @@ class TelegramBot:
             self._download_file(self.DOWNLOAD_REQUEST, update)
 
             return ConversationHandler.END
+
         elif msg == "n" or msg == "no":
             # Abort download wizard
             update.message.reply_text("Download wizard aborted..")
@@ -362,8 +411,6 @@ class TelegramBot:
             new_download_method=self.CONFIG["newDownloadMethod"],
             convert_to_mp4=self.CONFIG["videoToMP4"]
         )
-
-        raise Exception("I don't know why I have to do this..")
 
     def thumbnail(self, update, context):
         """
@@ -623,36 +670,7 @@ class TelegramBot:
         print("[Download cancel] User {} aborted download wizard".format(self.get_user_id(update)))
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
 
-        if self.get_user_id(update) in self.DOWNLOAD_PROCESSES:
-            print("[Download cancel] Found download thread")
 
-            # Stop download process
-            self.DOWNLOAD_PROCESSES[self.get_user_id(update)].terminate()
-            print("[Download cancel] Download thread killed")
-
-            # Remove index from dictionary
-            del self.DOWNLOAD_PROCESSES[self.get_user_id(update)]
-
-            # Wait some seconds to let the process kill properly...
-            sleep_time = 2
-            import time
-
-            print("[Download cancel] Removing all the data in {} folder in {} seconds..".format(
-                self.CONFIG["saveFolder"],
-                sleep_time)
-            )
-
-            time.sleep(sleep_time)
-
-            # Delete all video parts (so only files) in download folder
-            for the_file in os.listdir(self.CONFIG["saveFolder"]):
-                file_path = os.path.join(self.CONFIG["saveFolder"], the_file)
-                try:
-                    if os.path.isfile(file_path):
-                        print("[Download cancel] Found {}, i'm deleting it..".format(file_path))
-                        os.unlink(file_path)
-                except Exception as e:
-                    print(e)
 
         return ConversationHandler.END
 
