@@ -1,0 +1,121 @@
+download\Provabrzz.mp4  99.6% 00:04
+download\Provabrzz.mp4  99.7% 00:03
+download\Provabrzz.mp4  99.8% 00:02
+download\Provabrzz.mp4  99.9% 00:01
+download\Provabrzz.mp4  99.9% 00:00
+download\Provabrzz.mp4 100.0% 00:00
+Finished downloading video. Now converting...
+[DownloadManager] Video uploaded on VeryStream.com and returned a response
+{'name': 'Provabrzz.mp4', 'size': '1194178936', 'sha1': 'c8b7befadfff5d47013bdf7b5d46d5ae923af1b4', 'content_type': 'video/mp4', 'id': 'TmrZxW79ANY', 'url': 'https://verystream.com/stream/TmrZxW79ANY/Provabrzz.mp4'}
+Exception in thread Thread-2:
+Traceback (most recent call last):
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 617, in urlopen
+    chunked=chunked)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 402, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 2, in raise_from
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 398, in _make_request
+    httplib_response = conn.getresponse()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\http\client.py", line 1321, in getresponse
+    response.begin()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\http\client.py", line 296, in begin
+    version, status, reason = self._read_status()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\http\client.py", line 257, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\socket.py", line 589, in readinto
+    return self._sock.recv_into(b)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\ssl.py", line 1052, in recv_into
+    return self.read(nbytes, buffer)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\ssl.py", line 911, in read
+    return self._sslobj.read(len, buffer)
+ConnectionResetError: [WinError 10054] Connessione in corso interrotta forzatamente dall'host remoto
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\utils\request.py", line 218, in _request_wrapper
+    resp = self._con_pool.request(*args, **kwargs)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\request.py", line 70, in request
+    **urlopen_kw)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\request.py", line 148, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\poolmanager.py", line 244, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 666, in urlopen
+    _stacktrace=sys.exc_info()[2])
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\util\retry.py", line 347, in increment
+    raise six.reraise(type(error), error, _stacktrace)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\packages\six.py", line 685, in reraise
+    raise value.with_traceback(tb)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 617, in urlopen
+    chunked=chunked)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 402, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 2, in raise_from
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\vendor\ptb_urllib3\urllib3\connectionpool.py", line 398, in _make_request
+    httplib_response = conn.getresponse()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\http\client.py", line 1321, in getresponse
+    response.begin()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\http\client.py", line 296, in begin
+    version, status, reason = self._read_status()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\http\client.py", line 257, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\socket.py", line 589, in readinto
+    return self._sock.recv_into(b)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\ssl.py", line 1052, in recv_into
+    return self.read(nbytes, buffer)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\ssl.py", line 911, in read
+    return self._sslobj.read(len, buffer)
+telegram.vendor.ptb_urllib3.urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(10054, "Connessione in corso interrotta forzatamente dall'host remoto", None, 10054, None))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\threading.py", line 917, in _bootstrap_inner
+    self.run()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\threading.py", line 865, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\luca6\Google Drive\Repo\RimeSegateBot\classes\downloadmanager.py", line 224, in _download
+    ydl.download([download_request.url])
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\YoutubeDL.py", line 2008, in download
+    url, force_generic_extractor=self.params.get('force_generic_extractor', False))
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\YoutubeDL.py", line 807, in extract_info
+    return self.process_ie_result(ie_result, download, extra_info)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\YoutubeDL.py", line 861, in process_ie_result
+    return self.process_video_result(ie_result, download=download)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\YoutubeDL.py", line 1642, in process_video_result
+    self.process_info(new_info)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\YoutubeDL.py", line 1915, in process_info
+    success = dl(filename, info_dict)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\YoutubeDL.py", line 1854, in dl
+    return fd.download(name, info)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\downloader\common.py", line 366, in download
+    return self.real_download(filename, info_dict)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\downloader\http.py", line 342, in real_download
+    return download()
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\downloader\http.py", line 334, in download
+    'elapsed': time.time() - ctx.start_time,
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\youtube_dl\downloader\common.py", line 374, in _hook_progress
+    ph(status)
+  File "C:\Users\luca6\Google Drive\Repo\RimeSegateBot\classes\downloadmanager.py", line 246, in download_hook
+    self._handle_download_finished(d['filename'], d["total_bytes"])
+  File "C:\Users\luca6\Google Drive\Repo\RimeSegateBot\classes\downloadmanager.py", line 317, in _handle_download_finished
+    self.notifier.notify_uploader_response(response)
+  File "C:\Users\luca6\Google Drive\Repo\RimeSegateBot\classes\notifier.py", line 128, in notify_uploader_response
+    self._notify(response_beautified)
+  File "C:\Users\luca6\Google Drive\Repo\RimeSegateBot\classes\notifier.py", line 50, in _notify
+    self.update.message.reply_text(message, parse_mode=ParseMode.HTML, disable_notification=silent)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\message.py", line 458, in reply_text
+    return self.bot.send_message(self.chat_id, *args, **kwargs)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\bot.py", line 66, in decorator
+    result = func(self, *args, **kwargs)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\bot.py", line 258, in send_message
+    timeout=timeout, **kwargs)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\bot.py", line 123, in _message
+    result = self._request.post(url, data, timeout=timeout)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\utils\request.py", line 327, in post
+    **urlopen_kwargs)
+  File "C:\Users\luca6\AppData\Local\Programs\Python\Python37\lib\site-packages\python_telegram_bot-12.0.0b1-py3.7.egg\telegram\utils\request.py", line 224, in _request_wrapper
+    raise NetworkError('urllib3 HTTPError {0}'.format(error))
+telegram.error.NetworkError: urllib3 HTTPError ('Connection aborted.', ConnectionResetError(10054, "Connessione in corso interrotta forzatamente dall'host remoto", None, 10054, None))
+
