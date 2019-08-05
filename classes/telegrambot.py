@@ -9,10 +9,12 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, Conv
 from classes.downloadrequest import DownloadRequest
 from classes.notifier import Notifier
 from classes.openloadwrapper import OpenloadWrapper
-from classes.urlchecker import UrlChecker
 from classes.thumbnail import Thumbnail
+from classes.urlchecker import UrlChecker
+from classes.verystreamwrapper import VeryStreamWrapper
 
 LIST_OF_ADMINS = [238454100, 68736753]
+
 
 def send_action(action):
     """Sends `action` while processing func command."""
@@ -38,7 +40,6 @@ def restricted(func):
 
     @wraps(func)
     def wrapped(update, context, *args, **kwargs):
-
         user_id = update.message.chat_id
 
         if str(user_id) not in LIST_OF_ADMINS:
@@ -98,8 +99,18 @@ class TelegramBot:
         # Create bot object
         self.BOT = None
 
-        # Create openload object
-        self.OL = OpenloadWrapper(self.CONFIG["openload_api_login"], self.CONFIG["openload_api_key"])
+        if self.CONFIG["VeryStreamEnabled"]:
+            print("[TelegramBot] Selected VeryStream uploader")
+            # Create VeryStreamWrapper object
+            self.UPLOADER = VeryStreamWrapper(
+                self.CONFIG["verystream_api_login"],
+                self.CONFIG["verystream_api_key"],
+                timeout=self.CONFIG["videoTimeout"]
+            )
+        else:
+            print("[TelegramBot] Selected OpenLoad uploader")
+            # Create OpenLoadWrapper object
+            self.UPLOADER = OpenloadWrapper(self.CONFIG["openload_api_login"], self.CONFIG["openload_api_key"])
 
     def start_bot(self):
         """ This method is used to start the telegram bot. """
@@ -136,12 +147,18 @@ class TelegramBot:
             # Start restart operation in different thread
             Thread(target=stop_and_restart).start()
 
-        # Register commands
+        # Start command (useless)
         dp.add_handler(CommandHandler("start", self.start, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+
+        # Help command (useless) TODO: Add help command
         dp.add_handler(CommandHandler("help", self.help, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+
+        # All restart aliases
         dp.add_handler(CommandHandler("restart", restart, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+        dp.add_handler(CommandHandler("reboot", restart, filters=Filters.user(user_id=LIST_OF_ADMINS)))
+
+        # Stop download command
         dp.add_handler(CommandHandler("stop", self.stop, filters=Filters.user(user_id=LIST_OF_ADMINS)))
-        # dp.add_handler(CommandHandler("thumbnail_b1", self.thumbnail_b1, filters=Filters.user(user_id=LIST_OF_ADMINS)))
 
         # Add error handler
         dp.add_error_handler(self.error)
@@ -161,11 +178,11 @@ class TelegramBot:
         thumbnail_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('thumbnail', self.thumbnail, filters=Filters.user(user_id=LIST_OF_ADMINS))],
             states={
-                 self.SET_VIDEO_NAME: [MessageHandler(Filters.text, self.thumbnail_set_video_name, pass_user_data=True)],
-                 self.SET_MODEL: [MessageHandler(Filters.text, self.thumbnail_set_model, pass_user_data=True)],
-                 self.SET_CATEGORIES: [MessageHandler(Filters.text, self.thumbnail_set_categories, pass_user_data=True)],
-                 self.SET_URL: [MessageHandler(Filters.text, self.thumbnail_set_url, pass_user_data=True)]
-             },
+                self.SET_VIDEO_NAME: [MessageHandler(Filters.text, self.thumbnail_set_video_name, pass_user_data=True)],
+                self.SET_MODEL: [MessageHandler(Filters.text, self.thumbnail_set_model, pass_user_data=True)],
+                self.SET_CATEGORIES: [MessageHandler(Filters.text, self.thumbnail_set_categories, pass_user_data=True)],
+                self.SET_URL: [MessageHandler(Filters.text, self.thumbnail_set_url, pass_user_data=True)]
+            },
             fallbacks=[CommandHandler('cancel', self.cancel_thumbnail_wizard)],
         )
 
@@ -335,6 +352,9 @@ class TelegramBot:
         the "noDownloadWizard" flag is set at True.
         """
 
+        # Create unique notifier for this user (every update -> different notifier)
+        notifier = Notifier(update, self.BOT)
+
         # Get last message sent by the user
         filename = update.message.text
 
@@ -349,6 +369,10 @@ class TelegramBot:
             update.message.reply_text(self.DOWNLOAD_CONFIRMATION)
             return self.START_DOWNLOAD
         else:
+            notifier.notify_error(
+                "This name is not valid! The name have a minimum 4 characters and a maximum of 254 characters"
+            )
+
             # Ask again
             return self.SET_FILE_NAME
 
@@ -377,7 +401,7 @@ class TelegramBot:
             update.message.reply_text("Download wizard aborted..")
 
             # Reset download request
-            #self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
+            # self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
             self.cancel_download_wizard(update, context)
 
             # End conversation
@@ -400,8 +424,8 @@ class TelegramBot:
         manager = DownloadManager(
             request,
             notifier=Notifier(session, self.BOT, self.CONFIG["videoTimeout"]),
-            openload=self.OL,
-            openload_thumbnail=self.CONFIG["openloadThumbnail"],
+            uploader=self.UPLOADER,
+            online_thumbnail=self.CONFIG["onlineThumbnail"],
         )
 
         manager.download_file(
@@ -421,46 +445,38 @@ class TelegramBot:
 
         notifier = Notifier(update, self.BOT)
 
-        try:
-            print("[Thumbnail] Check if user with id {} has downloaded any videos..".format(self.get_user_id(update)))
-            thumbnail = self.THUMBNAILS.get(self.get_user_id(update))
+        print("[Thumbnail] Check if user with id {} has downloaded any videos..".format(self.get_user_id(update)))
+        thumbnail = self.THUMBNAILS.get(self.get_user_id(update))
 
-            if thumbnail is None:
-                print("You have first to upload the video to OpenLoad to access this function..")
-                notifier.notify_warning("You have to download and upload a video on OpenLoad to use this function properly.")
-                return ConversationHandler.END
-
-            else:
-                notifier.notify_success(
-                    "We detected that you have already uploaded a video on OpenLoad so you can start build your caption"
-                )
-
-                notifier.notify_warning(
-                    "This is a wizard that helps you to generate a nice caption for your thumbnail. "
-                    "You can type '/cancel' in any moment to abort the process!"
-                )
-
-                if self.CONFIG["openloadThumbnail"]:
-                    print("[Thumbnail] User {} has a valid thumbnail URL saved: {}".format(
-                        self.get_user_id(update),
-                        thumbnail.URL)
-                    )
-                else:
-                    print("[Thumbnail] User {} has a valid thumbnail data saved in '{}'".format(
-                        self.get_user_id(update),
-                        len(thumbnail.IMAGE_LOCAL_PATH))
-                    )
-
-                notifier.notify_information("Select a video name. PS: It can't be only spaces!")
-
-                return self.SET_VIDEO_NAME
-
-        except KeyError:
-            print("[Thumbnail] Can't find user id in list..")
-            print(self.THUMBNAILS)
-            notifier.notify_warning("You haven't downloaded any videos...")
-
+        if (thumbnail is None) or (self.get_user_id(update) not in self.THUMBNAILS):
+            print("You have first to upload the video to OpenLoad to access this function..")
+            notifier.notify_warning("You have to download and upload a video on OpenLoad to use this function properly.")
             return ConversationHandler.END
+
+        else:
+            notifier.notify_success(
+                "We detected that you have already uploaded a video on OpenLoad so you can start build your caption"
+            )
+
+            notifier.notify_warning(
+                "This is a wizard that helps you to generate a nice caption for your thumbnail. "
+                "You can type '/cancel' in any moment to abort the process!"
+            )
+
+            if self.CONFIG["onlineThumbnail"]:
+                print("[Thumbnail] User {} has a valid thumbnail URL saved: {}".format(
+                    self.get_user_id(update),
+                    thumbnail.URL)
+                )
+            else:
+                print("[Thumbnail] User {} has a valid thumbnail data saved in '{}'".format(
+                    self.get_user_id(update),
+                    len(thumbnail.IMAGE_LOCAL_PATH))
+                )
+
+            notifier.notify_information("Select a video name. PS: It can't be only spaces!")
+
+            return self.SET_VIDEO_NAME
 
     def thumbnail_set_video_name(self, update, context):
         """
@@ -589,7 +605,7 @@ class TelegramBot:
             self._build_thumbnail_message(
                 notifier,
                 self.THUMBNAILS[self.get_user_id(update)],
-                online=self.CONFIG["openloadThumbnail"]
+                online=self.CONFIG["onlineThumbnail"]
             )
 
             notifier.notify_success(
@@ -633,30 +649,6 @@ class TelegramBot:
                 caption=notifier.generate_caption(thumbnail)
             )
 
-    def thumbnail_b1(self, update, context):
-        """
-        WARNING: FOR TESTING ONLY
-        This method will download the Thumbnail from OpenLoad using its APIs.
-        """
-
-        notifier = Notifier(update, self.BOT)
-        try:
-            print("[Thumbnail] Check if user with id {} has downloaded any videos..".format(self.get_user_id(update)))
-            thumbnail_url = self.THUMBNAILS.get(self.get_user_id(update)).URL
-
-            if thumbnail_url is None:
-                print("You have first to upload the video to OpenLoad to access this function..")
-            else:
-                from classes.downloadmanager import DownloadManager
-                print("You have a thumbnail!!! " + thumbnail_url)
-                notifier.send_photo_bytes(
-                    DownloadManager.download_image_stream(thumbnail_url)
-                )
-        except KeyError:
-            print("[Thumbnail] Can't find user id in list..")
-            print(self.THUMBNAILS)
-            notifier.notify_warning("You haven't downloaded any videos...")
-
     def cancel_download_wizard(self, update, context):
         """
         This method is called when the conversation abort command is detected.
@@ -669,8 +661,6 @@ class TelegramBot:
         notifier.notify_success("Exited downloading wizard!")
         print("[Download cancel] User {} aborted download wizard".format(self.get_user_id(update)))
         self.DOWNLOAD_REQUEST = DownloadRequest(None, None)
-
-
 
         return ConversationHandler.END
 

@@ -100,7 +100,8 @@ def create_default_file(file_path):
 
 def config_loader() -> str:
     """
-    This function tries to look for the config file by itself. If it doesn't find the file it downloads a default config
+    This function tries to look for the config file by itself and checks if the file is valid or not.
+    If it doesn't find the file or the file is not valid (missing settings) it downloads a default config
     file from my personal server.
     :return Path of the config file.
     """
@@ -113,7 +114,9 @@ def config_loader() -> str:
         create_default_file(possible_path)
         DOWNLOADED_DEFAULT_CONFIG_FILE = True
     else:
+        # Check file
         print("[Config] File found in '{}'".format(possible_path))
+
     return possible_path
 
 

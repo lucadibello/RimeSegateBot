@@ -111,7 +111,7 @@ class Notifier:
             timeout=self.VIDEO_TIMEOUT
         )
 
-    def notify_openload_response(self, response: dict):
+    def notify_uploader_response(self, response: dict):
         """
         This method is used to notify the user that the video has been successfully uploaded to OpenLoad.co
         :param response: OpenLoad.co response after upload as Dict object (Dictionary).

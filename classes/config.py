@@ -33,16 +33,23 @@ class Config:
         with open(self.filepath) as json_file:
             return json.load(json_file)
 
-    def check_config_file(self):
+    def check_config_file(self, keys: list) -> bool:
         """
         Checks the conformity of the config file. If detects that the config
         file is malformed or damaged (ex. non accessible, ...) this function
         will generate a new one using the 'create_default_file' function.
+        :param keys List of keys used for the file integrity check
         """
         # TODO: Finish
-
         data = self._read_json()
-        print("Check if there are all the required settings")
+        keys_to_check = data.keys()
+
+        if keys_to_check == keys:
+            print("[Config] Config file is valid")
+            return True
+        else:
+            print("[Config] Config file not valid")
+            return False
 
     def get_settings(self):
         """
