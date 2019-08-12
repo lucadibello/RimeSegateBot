@@ -296,7 +296,8 @@ class DownloadManager:
                     "(depends from file size and internet upload speed)"
                 )
 
-                response = self.VS.upload_file(file_path)
+                # response = self.VS.upload_file(file_path)
+                response = self.VS.upload_large_file(file_path)
                 print("[DownloadManager] Video uploaded on VeryStream.com and returned a response")
                 print(response)
 

@@ -1,5 +1,9 @@
-from verystream import *
+import os
 import time
+import requests
+from requests_toolbelt import MultipartEncoder
+
+from verystream import *
 
 
 class VeryStreamWrapper(Verystream):
@@ -38,3 +42,20 @@ class VeryStreamWrapper(Verystream):
         except:
             print("[OpenloadWrapper] Thumbnail not ready yet")
             self.get_thumbnail_when_ready(media_id, delay)
+
+    def upload_large_file(self, file_path, **kwargs):
+        response = self.upload_link(**kwargs)
+        upload_url = response.get("url")
+
+        _, file_name = os.path.split(file_path)
+
+        with open(file_path, 'rb') as upload_file:
+            data = MultipartEncoder({
+                "files": (file_name, upload_file, "application/octet-stream"),
+            })
+
+            headers = {"Prefer": "respond-async", "Content-Type": data.content_type}
+            response_json = requests.post(upload_url, headers=headers, data=data).json()
+
+        self._check_status(response_json)
+        return response_json['result']
