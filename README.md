@@ -1,12 +1,12 @@
 # RimeSegate's Telegram Bot
-This telegram bot is able to download videos from over 800 websites thanks to [Youtube-dl](https://github.com/ytdl-org/youtube-dl). All the downloaded videos are uploaded autonomously to [OpenLoad.co](https://openload.co/).
+This telegram bot is able to download videos from over 800 websites thanks to [Youtube-dl](https://github.com/ytdl-org/youtube-dl). All the downloaded videos are uploaded autonomously to [OpenLoad.co](https://openload.co/) or [VeryStream.com](https://verystream.com/).
 After the upload process it will generate a video preview using 9 frames of the downloaded video with [OpenCV](https://opencv.org/).
 
 ## Features
 
 - 2 download methods (urlretrieve + youtube-dl)
 - 3 preview generation methods (OpenLoad + VeryStream +  OpenCV)
-- Autonomous upload on https://openload.co/ and https://verystream.com/
+- Autonomous upload on [OpenLoad.co](https://openload.co/) and [VeryStream.com](https://verystream.com/)
 - Config file
 - Multi-Platform (UNIX + Windows)
 - Video converter (to MP4)
