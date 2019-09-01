@@ -5,7 +5,8 @@ After the upload process it will generate a video preview using 9 frames of the 
 ## Features
 
 - 2 download methods (urlretrieve + youtube-dl)
-- 2 preview generation methods (OpenLoad + OpenCV)
+- 3 preview generation methods (OpenLoad + VeryStream +  OpenCV)
+- Autonomous upload on https://openload.co/ and https://verystream.com/
 - Config file
 - Multi-Platform (UNIX + Windows)
 - Video converter (to MP4)
